@@ -28,11 +28,7 @@ if (!dir.exists(out_dir)) {
 flist <- list()
 dts <- list()
 print("Loading files for aggregation.")
-fdirs <- list.dirs(path = in_dir)
-for(d in fdirs) {
-  f <- list.files(path = d, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
-  flist <- c(flist, f)
-}
+flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
 for(f in flist) {
   dts <- c(dts, list(data.table::fread(f)))
 }
@@ -42,5 +38,7 @@ valid_entries <- df[EDAT > 0 & MDAT > 0 & ADAT > 0 & HDAT > 0 & HWAH >= 0]
 calc_production <- valid_entries[, `:=`(PROD = HARVEST_AREA * HWAH, YEAR = trunc(HDAT/1000)), by = .(LATITUDE, LONGITUDE)]
 aggregated<- calc_production[,.(PRODUCTION=sum(PROD), HDATE=as.Date(paste0(mean(HDAT)), "%Y%j")), by = .(LATITUDE,LONGITUDE,YEAR)]
 final <- aggregated[,.(lat=LATITUDE,lng=LONGITUDE,timestamp=HDATE,production=round(PRODUCTION/1000))]
+
+
 data.table::fwrite(final, file = out_file)
 print("Complete.")
