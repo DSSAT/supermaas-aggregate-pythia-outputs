@@ -19,7 +19,7 @@ suppressWarnings(in_dir <- normalizePath(argv$input))
 
 variables <- argv$variables
 suppressWarnings(if (is.na(variables)) {
-  variables <- c("HDAT","HWAH", "EDAT", "MDAT", "ADAT", "HDAT");
+  variables <- c("HWAH", "EDAT", "MDAT", "ADAT", "HDAT");
 })
 
 if (!dir.exists(in_dir)) {
