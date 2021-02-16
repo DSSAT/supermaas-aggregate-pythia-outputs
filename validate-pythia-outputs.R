@@ -8,9 +8,7 @@ p <- argparser::arg_parser("VAlidate Pythia outputs for World Modelers")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
 p <- argparser::add_argument(p, "--output", short="-o", "Path to the file of validation report")
 p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help="Variable names for aggregation")
-argv <- argparser::parse_args(p, c("test\\data\\case1", "-o", "test\\output\\report_validate.csv", "-v", "CWAM", "HWAH"))
-# argv <- argparser::parse_args(p, c("test\\data\\case1", "-o", "test\\output\\report2.csv"))
-# argv <- argparser::parse_args(p)
+argv <- argparser::parse_args(p)
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -48,7 +46,6 @@ for (variable in variables) {
                                paste0(invalid, "/", total),
                                paste0(round(zero/total*100, 2), "%"),
                                paste0(zero, "/", total)))
-  # cat(paste0(variable, ": ", paste(paste0("[-99] (", round(invalid/total*100, 2), "% "), paste0(invalid, "/", total, ") "), paste0("[0] (", round(zero/total, 2), "% "), paste0(zero, "/", total, ")"), sep="\t")), "\n")
 }
 print(report)
 if (!is.na(argv$output)) {
