@@ -14,9 +14,8 @@ suppressWarnings(in_dir <- normalizePath(argv$input))
 
 variables <- argv$variables
 if (is.na(variables)) {
-  variables = c("HDAT","HWAH", "EDAT", "MDAT", "ADAT", "HDAT");
+  variables <- c("HDAT","HWAH", "EDAT", "MDAT", "ADAT", "HDAT");
 }
-
 
 if (!dir.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
@@ -38,9 +37,9 @@ report <- data.table(ID=rnorm(0),
                      "pct_zero" = rnorm(0))
 
 for (variable in variables) {
-  total = df[, .N]
-  invalid = df[get(variable) < 0, .N]
-  zero = df[get(variable) == 0, .N]
+  total <- df[, .N]
+  invalid <- df[get(variable) < 0, .N]
+  zero <- df[get(variable) == 0, .N]
   report <- rbind(report, list(variable,
                                paste0(round(invalid/total*100, 2), "%"),
                                paste0(invalid, "/", total),
