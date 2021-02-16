@@ -6,8 +6,8 @@ setwd(".")
 
 p <- argparser::arg_parser("VAlidate Pythia outputs for World Modelers")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
-p <- argparser::add_argument(p, "--output", short="-o", "Path to the file of validation report")
-p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help="Variable names for aggregation")
+p <- argparser::add_argument(p, "--output", short = "-o", "Path to the file of validation report")
+p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = "Variable names for validation")
 argv <- argparser::parse_args(p)
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
