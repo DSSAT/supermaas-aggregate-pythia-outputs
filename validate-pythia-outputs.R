@@ -35,11 +35,11 @@ for(f in flist) {
 }
 df <- data.table::rbindlist(dts)
 print("Starting validation.")
-report <- data.table(ID=rnorm(0),
-                     "pct_invalid" = rnorm(0),
-                     "cnt_invalid" = rnorm(0),
-                     "pct_zero" = rnorm(0),
-                     "pct_zero" = rnorm(0))
+report <- data.table(Variable=rnorm(0),
+                     "Invalid_pct" = rnorm(0),
+                     "Invalid_cnt" = rnorm(0),
+                     "Zero_pct" = rnorm(0),
+                     "Zero_cnt" = rnorm(0))
 if (argv$min) {
   report[,`:=`(min=rnorm(0))]
 }
