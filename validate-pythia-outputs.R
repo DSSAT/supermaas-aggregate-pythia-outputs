@@ -8,6 +8,11 @@ p <- argparser::arg_parser("VAlidate Pythia outputs for World Modelers")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
 p <- argparser::add_argument(p, "--output", short = "-o", "Path to the file of validation report")
 p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = "Variable names for validation")
+p <- argparser::add_argument(p, "--min", short = "-i", flag = TRUE, help = "Report minimum value for range check")
+p <- argparser::add_argument(p, "--max", short = "-a", flag = TRUE, help = "Report maximum value for range check")
+p <- argparser::add_argument(p, "--mean", short = "-e", flag = TRUE, help = "Report mean value for range check")
+p <- argparser::add_argument(p, "--med", short = "-d", flag = TRUE, help = "Report meadian value for range check")
+p <- argparser::add_argument(p, "--no-zero", short="-n", flag = TRUE, help = "Exclude 0 value from range check")
 argv <- argparser::parse_args(p)
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
@@ -35,16 +40,46 @@ report <- data.table(ID=rnorm(0),
                      "cnt_invalid" = rnorm(0),
                      "pct_zero" = rnorm(0),
                      "pct_zero" = rnorm(0))
+if (argv$min) {
+  report[,`:=`(min=rnorm(0))]
+}
+if (argv$max) {
+  report[,`:=`(max=rnorm(0))]
+}
+if (argv$mean) {
+  report[,`:=`(mean=rnorm(0))]
+}
+if (argv$med) {
+  report[,`:=`(median=rnorm(0))]
+}
 
 for (variable in variables) {
   total <- df[, .N]
   invalid <- df[get(variable) < 0, .N]
   zero <- df[get(variable) == 0, .N]
-  report <- rbind(report, list(variable,
-                               paste0(round(invalid/total*100, 2), "%"),
-                               paste0(invalid, "/", total),
-                               paste0(round(zero/total*100, 2), "%"),
-                               paste0(zero, "/", total)))
+  row <- list(variable,
+              paste0(round(invalid/total*100, 2), "%"),
+              paste0(invalid, "/", total),
+              paste0(round(zero/total*100, 2), "%"),
+              paste0(zero, "/", total))
+  if (argv$no-zero) {
+    valid_entries <- df[get(variable)> 0]
+  } else {
+    valid_entries <- df[get(variable)>= 0]
+  }
+  if (argv$min) {
+    row <- c(row, valid_entries[,min(get(variable))])
+  }
+  if (argv$max) {
+    row <- c(row, valid_entries[,max(get(variable))])
+  }
+  if (argv$mean) {
+    row <- c(row, valid_entries[,mean(get(variable))])
+  }
+  if (argv$med) {
+    row <- c(row, valid_entries[,median(get(variable))])
+  }
+  report <- rbind(report, row)
 }
 print(report)
 if (!is.na(argv$output)) {
