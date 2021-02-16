@@ -13,9 +13,9 @@ argv <- argparser::parse_args(p)
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
 variables <- argv$variables
-if (is.na(variables)) {
+suppressWarnings(if (is.na(variables)) {
   variables <- c("HDAT","HWAH", "EDAT", "MDAT", "ADAT", "HDAT");
-}
+})
 
 if (!dir.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
