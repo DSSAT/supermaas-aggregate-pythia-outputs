@@ -59,8 +59,8 @@ if (TRUE) {
       final[, production := aggregated[,round(get(variable)/1000)]]
     } else {
       header <- paste0(variable, "_SUM")
-      aggregated[, (variable):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
-      final[, (header):= calc_production[,get(header)]]
+      aggregated[, (header):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+      final[, (header):= aggregated[,get(header)]]
     }
     
   }
