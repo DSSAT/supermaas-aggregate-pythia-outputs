@@ -55,12 +55,11 @@ if (TRUE) {
     if (variable == "PRODUCTION") {
       variable<-"PRODUCTION"
       calc_production[,(variable) := HARVEST_AREA * HWAH, by = .(LATITUDE, LONGITUDE)]
-      calc_production[,(header):=sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)]
-      aggregated[, (variable):= calc_production[,get(variable)]]
+      aggregated[, (variable):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
       final[, production := aggregated[,round(get(variable)/1000)]]
     } else {
       header <- paste0(variable, "_SUM")
-      calc_production[,(header):=sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)]
+      aggregated[, (variable):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
       final[, (header):= calc_production[,get(header)]]
     }
     
