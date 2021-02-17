@@ -13,6 +13,10 @@ p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help="Vari
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
 argv <- argparser::parse_args(p)
 
+# for test only
+# argv <- argparser::parse_args(p, c("test\\data\\case1", "test\\output\\report2.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
+# argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
+
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
 
