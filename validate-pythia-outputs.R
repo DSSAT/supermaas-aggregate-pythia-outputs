@@ -52,20 +52,33 @@ if (argv$mean) {
 if (argv$med) {
   report[,`:=`(median=rnorm(0))]
 }
-
 for (variable in variables) {
   total <- df[, .N]
-  invalid <- df[get(variable) < 0, .N]
-  zero <- df[get(variable) == 0, .N]
-  row <- list(variable,
-              paste0(round(invalid/total*100, 2), "%"),
-              paste0(invalid, "/", total),
-              paste0(round(zero/total*100, 2), "%"),
-              paste0(zero, "/", total))
-  if (argv$no-zero) {
-    valid_entries <- df[get(variable)> 0]
+  if (endsWith(variable, "DAT")) {
+    invalid <- df[get(variable) <= -99 | get(variable) == 9999999, .N]
   } else {
-    valid_entries <- df[get(variable)>= 0]
+    invalid <- df[get(variable) <= -99, .N]
+  }
+  if (endsWith(variable, "DAT") || variable == "TMAXA" || variable == "TMINA") {
+    row <- list(variable,
+                paste0(round(invalid/total*100, 2), "%"),
+                paste0(invalid, "/", total),"","")
+  } else {
+    zero <- df[get(variable) == 0, .N]
+    row <- list(variable,
+                paste0(round(invalid/total*100, 2), "%"),
+                paste0(invalid, "/", total),
+                paste0(round(zero/total*100, 2), "%"),
+                paste0(zero, "/", total))
+  }
+  
+  if (argv$no-zero && variable != "TMAXA" && variable != "TMINA") {
+    valid_entries <- df[get(variable)> -99 & get(variable) != 0]
+  } else {
+    valid_entries <- df[get(variable)> -99]
+  }
+  if (endsWith(variable, "DAT")) {
+    valid_entries <- valid_entries[get(variable) != 9999999]
   }
   if (argv$min) {
     row <- c(row, valid_entries[,min(get(variable))])
