@@ -72,7 +72,7 @@ for (variable in variables) {
                 paste0(zero, "/", total))
   }
   
-  if (argv$no-zero && variable != "TMAXA" && variable != "TMINA") {
+  if (argv$no_zero && variable != "TMAXA" && variable != "TMINA") {
     valid_entries <- df[get(variable)> -99 & get(variable) != 0]
   } else {
     valid_entries <- df[get(variable)> -99]
