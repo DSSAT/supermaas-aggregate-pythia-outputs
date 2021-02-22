@@ -57,7 +57,6 @@ if (TRUE) {
   for (variable in variables) {
     print(paste("Processing",  variable))
     if (variable == "PRODUCTION") {
-      variable<-"PRODUCTION"
       calc_production[,(variable) := HARVEST_AREA * HWAH, by = .(LATITUDE, LONGITUDE)]
       aggregated[, (variable):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
       final[, production := aggregated[,round(get(variable)/1000)]]
