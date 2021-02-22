@@ -15,6 +15,11 @@ p <- argparser::add_argument(p, "--med", short = "-d", flag = TRUE, help = "Repo
 p <- argparser::add_argument(p, "--no-zero", short="-n", flag = TRUE, help = "Exclude 0 value from range check")
 argv <- argparser::parse_args(p)
 
+# for test only
+# argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
+# argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "--min","--max","--med","-n"))
+
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
 variables <- argv$variables
