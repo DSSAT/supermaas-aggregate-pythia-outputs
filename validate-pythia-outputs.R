@@ -12,13 +12,14 @@ p <- argparser::add_argument(p, "--min", short = "-i", flag = TRUE, help = "Repo
 p <- argparser::add_argument(p, "--max", short = "-a", flag = TRUE, help = "Report maximum value for range check")
 p <- argparser::add_argument(p, "--mean", short = "-e", flag = TRUE, help = "Report mean value for range check")
 p <- argparser::add_argument(p, "--med", short = "-d", flag = TRUE, help = "Report meadian value for range check")
+p <- argparser::add_argument(p, "--std", short = "-s", flag = TRUE, help = "Report standard deviation for range check")
 p <- argparser::add_argument(p, "--no-zero", short="-n", flag = TRUE, help = "Exclude 0 value from range check")
 argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv"))
-# argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "--min","--max","--med","-n"))
+# argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "--min","--max","--med", "--std", "-n"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -56,6 +57,9 @@ if (argv$mean) {
 }
 if (argv$med) {
   report[,`:=`(median=rnorm(0))]
+}
+if (argv$std) {
+  report[,`:=`(std=rnorm(0))]
 }
 for (variable in variables) {
   total <- df[, .N]
@@ -96,6 +100,9 @@ for (variable in variables) {
   }
   if (argv$med) {
     row <- c(row, valid_entries[,median(get(variable))])
+  }
+  if (argv$std) {
+    row <- c(row, valid_entries[,sd(get(variable))])
   }
   report <- rbind(report, row)
 }
