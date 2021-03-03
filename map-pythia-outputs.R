@@ -24,7 +24,7 @@ p <- argparser::arg_parser("Generate Map with Aggregated Pythia outputs for Worl
 p <- argparser::add_argument(p, "input_csv", "Aggregated Pythia result CSV file for generating map")
 p <- argparser::add_argument(p, "input_shape", "Shape file for generating map")
 p <- argparser::add_argument(p, "output", "Path to the generated map file, the file name is optional")
-p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable names for generating map: [", paste(predefined_vars, var_dic[unit != "text", name], collapse = ","), "]"))
+p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable names for generating map: [", paste(c(predefined_vars, var_dic[total | average, name]), collapse = ","), "]"))
 argv <- argparser::parse_args(p)
 
 # for test only
