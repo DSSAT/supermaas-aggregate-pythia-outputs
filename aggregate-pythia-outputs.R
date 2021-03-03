@@ -74,17 +74,20 @@ if (TRUE) {
   # execute predefined variable aggregation
   suppressWarnings(if (!is.na(variables)) {
     for (variable in variables) {
-      print(paste("Processing",  variable))
-      if (variable == "TIMESTAMP") {
-        calc_production[,`:=`(HDAT_ISO = as.Date(paste0(HDAT), "%Y%j"))]
-        aggregated[,(variable):= calc_production[,mean.Date(HDAT_ISO),by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
-        final[, timestamp := aggregated[,get(variable)]]
-      } else if (variable == "PRODUCTION") {
-        calc_production[,(variable) := HARVEST_AREA * HWAH, by = .(LATITUDE, LONGITUDE)]
-        aggregated[, (variable):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
-        final[, production := aggregated[,round(get(variable)/1000)]]
+      if (variable %in% predefined_vars) {
+        print(paste("Processing",  variable))
+        if (variable == "TIMESTAMP") {
+          calc_production[,`:=`(HDAT_ISO = as.Date(paste0(HDAT), "%Y%j"))]
+          aggregated[,(variable):= calc_production[,mean.Date(HDAT_ISO),by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          final[, timestamp := aggregated[,get(variable)]]
+        } else if (variable == "PRODUCTION") {
+          calc_production[,(variable) := HARVEST_AREA * HWAH, by = .(LATITUDE, LONGITUDE)]
+          aggregated[, (variable):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          final[, production := aggregated[,round(get(variable)/1000)]]
+        }
+      } else {
+        print(paste("Processing",  variable, "is unsupported and skipped"))
       }
-      
     }
   })
   
