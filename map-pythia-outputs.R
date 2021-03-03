@@ -1,11 +1,5 @@
 #library(here)
 library(argparser)
-library(ggplot2)
-library(sf)
-library(raster)
-library(ggspatial)
-library(rnaturalearth)
-library(rnaturalearthdata) #for shapefiles, addition to gadm
 
 setwd(".")
 
@@ -30,6 +24,13 @@ argv <- argparser::parse_args(p)
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\report5.csv", "test\\data\\case5\\ETH_Kelem_shp\\Kelem_Wellega_Oramia.shp", "test\\output", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\report5.csv", "test\\data\\case5\\ETH_Kelem_shp\\Kelem_Wellega_Oramia.shp", "test\\output"))
+
+library(ggplot2)
+library(sf)
+library(raster)
+library(ggspatial)
+library(rnaturalearth)
+library(rnaturalearthdata) #for shapefiles, addition to gadm
 
 suppressWarnings(in_csv <- normalizePath(argv$input_csv))
 suppressWarnings(in_shape <- normalizePath(argv$input_shape))
