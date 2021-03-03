@@ -140,6 +140,10 @@ if (TRUE) {
     }
   })
   
+  if ("timestamp" %in% colnames(final)) {
+    final[, year:=NULL]
+  }
+  
   data.table::fwrite(final, file = out_file)
 }
 # if (argv$period_month) {
