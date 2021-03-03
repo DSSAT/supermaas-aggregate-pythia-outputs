@@ -70,8 +70,8 @@ for (variable in variables) {
     headers <- paste0(variable, c("_TOT", "_AVG"));
   }
   for (variable in headers) {
-    if (variable %in% plot_yld_data) {
-      print(paste0("Processing map for ", variable, " ."))
+    if (variable %in% colnames(plot_yld_data)) {
+      print(paste0("Processing map for ", variable))
       ggplot()+
         geom_sf(data=plot_yld_data, aes(color=get(variable)))+
         geom_sf(data=shp_data, size=0.75, alpha=0.5, fill="lightgrey")+
@@ -91,6 +91,8 @@ for (variable in variables) {
         plot = last_plot(),
         path = out_dir
       )
+    } else {
+      print(paste0("Processing map for ", variable, " is skipped"))
     }
   }
 }
