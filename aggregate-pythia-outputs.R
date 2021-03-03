@@ -13,12 +13,14 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
+predefined_vars <- c("PRODUCTION", "TIMESTAMP")
+
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
 p <- argparser::add_argument(p, "output", "final output of the aggregated files")
-p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help="Variable names for predefined aggregation")
-p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help="Variable names for summary aggregation")
-p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help="Variable names for average aggregation")
+p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help=paste0("Variable names for predefined aggregation: [", paste(predefined_vars, collapse=","), "]"))
+p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total==TRUE,name], collapse=","), "]"))
+p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average==TRUE,name], collapse=","), "]"))
 # p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -38,7 +40,7 @@ variables <- argv$variables
 totVariables <- argv$total
 avgVariables <- argv$average
 suppressWarnings(if (is.na(variables) && is.na(totVariables) && is.na(avgVariables)) {
-  variables <- c("PRODUCTION", "TIMESTAMP");
+  variables <- predefined_vars
 })
 
 if (!dir.exists(in_dir)) {
