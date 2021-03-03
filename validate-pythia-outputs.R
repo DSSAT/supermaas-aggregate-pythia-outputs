@@ -4,6 +4,15 @@ library(data.table)
 
 setwd(".")
 
+data_cde_file <- "DATA_CDE.csv"
+if (file.exists(data_cde_file)) {
+  var_dic <- data.table::fread(data_cde_file)
+} else {
+  # const_ha_vars <- c("DWAP", "CWAM", "HWAM", "HWAH", "BWAH", "PWAM", "")
+  # const_temp_vars <- c("TMAXA", "TMINA")
+  # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
+}
+
 p <- argparser::arg_parser("VAlidate Pythia outputs for World Modelers")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
 p <- argparser::add_argument(p, "--output", short = "-o", "Path to the file of validation report")
@@ -63,46 +72,49 @@ if (argv$std) {
 }
 for (variable in variables) {
   total <- df[, .N]
-  if (endsWith(variable, "DAT")) {
-    invalid <- df[get(variable) <= -99 | get(variable) == 9999999, .N]
+  if (variable %in% var_dic[unit == "date", name]) {
+    header <- paste0(variable, "_ISO")
+    df[, (header) := as.Date(paste0(get(variable)), "%Y%j")]
+    invalid <- df[is.na(get(header)), .N]
   } else {
-    invalid <- df[get(variable) <= -99, .N]
+    header <- variable
+    invalid <- df[get(header) <= -99, .N]
   }
-  if (endsWith(variable, "DAT") || variable == "TMAXA" || variable == "TMINA") {
+  
+  if (variable %in% var_dic[unit %in% c("date", "degree_c"), name]) {
     row <- list(variable,
                 paste0(round(invalid/total*100, 2), "%"),
                 paste0(invalid, "/", total),"","")
   } else {
-    zero <- df[get(variable) == 0, .N]
+    zero <- df[get(header) == 0, .N]
     row <- list(variable,
                 paste0(round(invalid/total*100, 2), "%"),
                 paste0(invalid, "/", total),
                 paste0(round(zero/total*100, 2), "%"),
                 paste0(zero, "/", total))
   }
-  
-  if (argv$no_zero && variable != "TMAXA" && variable != "TMINA") {
-    valid_entries <- df[get(variable)> -99 & get(variable) != 0]
+  if (variable %in% var_dic[unit == "date", name]) {
+    valid_entries <- df[!is.na(get(header))]
+  } else if (argv$no_zero && !variable %in% var_dic[unit == "degree_c", name]) {
+    valid_entries <- df[get(header)> -99 & get(header) != 0]
   } else {
-    valid_entries <- df[get(variable)> -99]
+    valid_entries <- df[get(header)> -99]
   }
-  if (endsWith(variable, "DAT")) {
-    valid_entries <- valid_entries[get(variable) != 9999999]
-  }
+  
   if (argv$min) {
-    row <- c(row, valid_entries[,min(get(variable))])
+    row <- c(row, paste0(valid_entries[,min(get(header))]))
   }
   if (argv$max) {
-    row <- c(row, valid_entries[,max(get(variable))])
+    row <- c(row, paste0(valid_entries[,max(get(header))]))
   }
   if (argv$mean) {
-    row <- c(row, valid_entries[,mean(get(variable))])
+    row <- c(row, paste0(valid_entries[,mean(get(header))]))
   }
   if (argv$med) {
-    row <- c(row, valid_entries[,median(get(variable))])
+    row <- c(row, paste0(valid_entries[,median(get(header))]))
   }
   if (argv$std) {
-    row <- c(row, valid_entries[,sd(get(variable))])
+    row <- c(row, paste0(valid_entries[,sd(get(variable))]))
   }
   report <- rbind(report, row)
 }
