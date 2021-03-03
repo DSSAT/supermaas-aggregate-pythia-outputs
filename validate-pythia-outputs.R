@@ -16,7 +16,7 @@ if (file.exists(data_cde_file)) {
 p <- argparser::arg_parser("VAlidate Pythia outputs for World Modelers")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
 p <- argparser::add_argument(p, "--output", short = "-o", "Path to the file of validation report")
-p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = "Variable names for validation")
+p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable names for validation: [", paste(var_dic[unit != "text", name], collapse = ","), "]"))
 p <- argparser::add_argument(p, "--min", short = "-i", flag = TRUE, help = "Report minimum value for range check")
 p <- argparser::add_argument(p, "--max", short = "-a", flag = TRUE, help = "Report maximum value for range check")
 p <- argparser::add_argument(p, "--mean", short = "-e", flag = TRUE, help = "Report mean value for range check")
