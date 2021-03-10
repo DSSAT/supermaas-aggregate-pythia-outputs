@@ -13,14 +13,14 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
-predefined_vars <- c("PRODUCTION", "TIMESTAMP")
+predefined_vars <- c("PRODUCTION", "TIMESTAMP","")
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
 p <- argparser::add_argument(p, "output", "final output of the aggregated files")
 p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help=paste0("Variable names for predefined aggregation: [", paste(predefined_vars, collapse=","), "]"))
-p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total==TRUE,name], collapse=","), "]"))
-p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average==TRUE,name], collapse=","), "]"))
+p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total!="",name], collapse=","), "]"))
+p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
 # p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -29,6 +29,7 @@ argv <- argparser::parse_args(p)
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case1", "test\\output\\report2.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -94,9 +95,9 @@ if (TRUE) {
   # execute summary aggregation
   suppressWarnings(if (!is.na(totVariables)) {
     for (variable in totVariables) {
-      if (var_dic[name == variable, total]) {
+      header <- var_dic[name == variable, total]
+      if (header != "") {
         print(paste("Processing summary for",  variable))
-        header <- paste0(variable, "_TOT")
         
         if (var_dic[name == variable, unit] == "kg/ha") {
           
@@ -117,13 +118,15 @@ if (TRUE) {
   # execute average aggregation
   suppressWarnings(if (!is.na(avgVariables)) {
     for (variable in avgVariables) {
-      if (var_dic[name == variable, total]) {
+      header <- var_dic[name == variable, average]
+      if (header != "") {
         print(paste("Processing summary for",  variable))
-        header <- paste0(variable, "_AVG")
         
         if (var_dic[name == variable, unit] == "kg/ha") {
           
+          # header_tot <- var_dic[name == variable, total]
           header_tot <- paste0(variable, "_TOT")
+          
           calc_production[,(header_tot):= get(variable) * HARVEST_AREA, by = .(LATITUDE, LONGITUDE)]
           aggregated[, (header):= calc_production[,sum(get(header_tot)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
           aggregated[,(header):=get(header)/HARVEST_AREA_TOT]
