@@ -21,7 +21,7 @@ p <- argparser::add_argument(p, "output", "final output of the aggregated files"
 p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help=paste0("Variable names for predefined aggregation: [", paste(predefined_vars, collapse=","), "]"))
 p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
-# p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
+p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
 argv <- argparser::parse_args(p)
@@ -43,6 +43,7 @@ avgVariables <- argv$average
 suppressWarnings(if (is.na(variables) && is.na(totVariables) && is.na(avgVariables)) {
   variables <- predefined_vars
 })
+argv$period_annual <- TRUE
 
 if (!dir.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
@@ -64,8 +65,7 @@ for(f in flist) {
 df <- data.table::rbindlist(dts)
 valid_entries <- df[EDAT > 0 & MDAT > 0 & ADAT > 0 & HDAT > 0 & HWAH >= 0]
 print("Starting aggregation.")
-# if (argv$period_annual) {
-if (TRUE) {
+if (argv$period_annual) {
   print("Processing annual calculation.")
   calc_production <- valid_entries[,`:=`(YEAR = trunc(HDAT/1000)), by = .(LATITUDE, LONGITUDE)]
   # aggregated<- calc_production[,.(HARVEST_DATE=mean(as.Date(paste0((HDAT)), "%Y%j"))),by = .(LATITUDE,LONGITUDE,YEAR)]
