@@ -70,6 +70,7 @@ print("Starting aggregation.")
 if (argv$period_annual) {
   print("Processing annual calculation.")
   calc_production <- valid_entries[,`:=`(YEAR = trunc(HDAT/1000)), by = .(LATITUDE, LONGITUDE)]
+  calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = .(LATITUDE, LONGITUDE, YEAR)]
   # aggregated <- calc_production[,.(HARVEST_DATE=mean(as.Date(paste0((HDAT)), "%Y%j"))),by = .(LATITUDE,LONGITUDE,YEAR)]
   aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = .(LATITUDE,LONGITUDE,YEAR)]
   final <- aggregated[,.(lat=LATITUDE,lng=LONGITUDE, year=YEAR)]
@@ -126,18 +127,19 @@ if (argv$period_annual) {
         
         if (var_dic[name == variable, unit] == "kg/ha") {
           
-          # header_tot <- var_dic[name == variable, total]
-          header_tot <- paste0(variable, "_TOT")
-          
-          calc_production[,(header_tot):= get(variable) * HARVEST_AREA, by = .(LATITUDE, LONGITUDE)]
-          aggregated[, (header):= calc_production[,sum(get(header_tot)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          ## header_tot <- var_dic[name == variable, total]
+          # header_tot <- paste0(variable, "_TOT")
+          # if (!header_tot %in% colnames(calc_production)) {
+          #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA, by = .(LATITUDE, LONGITUDE)]
+          # }
+          aggregated[, (header):= calc_production[,sum(get(variable) * HARVEST_AREA_PCT), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
           aggregated[,(header):=get(header)/HARVEST_AREA_TOT]
           final[, (header):= aggregated[,get(header)]]
           
         } else if (var_dic[name == variable, unit] == "date") {
           
           calc_production[,(header):= as.Date(paste0(get(variable)), "%Y%j")]
-          aggregated[,(header):= calc_production[,mean.Date(get(header)),by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
           final[, (header) := aggregated[,get(header)]]
           
         } else {
