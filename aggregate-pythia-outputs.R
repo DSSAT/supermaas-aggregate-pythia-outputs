@@ -21,13 +21,14 @@ p <- argparser::add_argument(p, "output", "final output of the aggregated files"
 p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help=paste0("Variable names for predefined aggregation: [", paste(predefined_vars, collapse=","), "]"))
 p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
+p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
 argv <- argparser::parse_args(p)
 
 # for test only
-# argv <- argparser::parse_args(p, c("test\\data\\case1", "test\\output\\report2.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
+# argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2.csv", "-v", "PRODUCTION", "-t", "CWAM", "HWAH", "-a", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 
@@ -40,7 +41,8 @@ suppressWarnings(out_file <- normalizePath(argv$output))
 variables <- argv$variables
 totVariables <- argv$total
 avgVariables <- argv$average
-suppressWarnings(if (is.na(variables) && is.na(totVariables) && is.na(avgVariables)) {
+totTonVariables <- argv$total_ton
+suppressWarnings(if (is.na(variables) && is.na(totVariables) && is.na(avgVariables) && is.na(totTonVariables)) {
   variables <- predefined_vars
 })
 argv$period_annual <- TRUE
@@ -144,6 +146,29 @@ if (argv$period_annual) {
         
       } else {
         print(paste("Processing average for",  variable, "is unsupported and skipped"))
+      }
+    }
+  })
+  
+  # execute total_ton aggregation
+  suppressWarnings(if (!is.na(totTonVariables)) {
+    for (variable in totTonVariables) {
+      header <- var_dic[name == variable, total_ton]
+      if (header != "") {
+        print(paste("Processing summary (unit=ton) for",  variable))
+        
+        if (var_dic[name == variable, unit] == "kg/ha") {
+          
+          calc_production[,(header):= get(variable) * HARVEST_AREA, by = .(LATITUDE, LONGITUDE)]
+          aggregated[, (header):= calc_production[,sum(get(header)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          final[, (header):= aggregated[,round(get(header)/1000)]]
+          
+        } else {
+          print(paste("Processing summary (unit=ton) for",  variable, "is unsupported and skipped"))
+        }
+        
+      } else {
+        print(paste("Processing summary (unit=ton) for",  variable, "is unsupported and skipped"))
       }
     }
   })
