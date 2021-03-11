@@ -120,7 +120,7 @@ if (TRUE) {
     for (variable in avgVariables) {
       header <- var_dic[name == variable, average]
       if (header != "") {
-        print(paste("Processing summary for",  variable))
+        print(paste("Processing average for",  variable))
         
         if (var_dic[name == variable, unit] == "kg/ha") {
           
@@ -139,11 +139,11 @@ if (TRUE) {
           final[, (header) := aggregated[,get(header)]]
           
         } else {
-          print(paste("Processing summary for",  variable, "is unsupported and skipped"))
+          print(paste("Processing average for",  variable, "is unsupported and skipped"))
         }
         
       } else {
-        print(paste("Processing summary for",  variable, "is unsupported and skipped"))
+        print(paste("Processing average for",  variable, "is unsupported and skipped"))
       }
     }
   })
