@@ -70,8 +70,8 @@ print("Starting aggregation.")
 if (argv$period_annual) {
   print("Processing annual calculation.")
   calc_production <- valid_entries[,`:=`(YEAR = trunc(HDAT/1000)), by = .(LATITUDE, LONGITUDE)]
-  # aggregated<- calc_production[,.(HARVEST_DATE=mean(as.Date(paste0((HDAT)), "%Y%j"))),by = .(LATITUDE,LONGITUDE,YEAR)]
-  aggregated<- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = .(LATITUDE,LONGITUDE,YEAR)]
+  # aggregated <- calc_production[,.(HARVEST_DATE=mean(as.Date(paste0((HDAT)), "%Y%j"))),by = .(LATITUDE,LONGITUDE,YEAR)]
+  aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = .(LATITUDE,LONGITUDE,YEAR)]
   final <- aggregated[,.(lat=LATITUDE,lng=LONGITUDE, year=YEAR)]
   
   # execute predefined variable aggregation
