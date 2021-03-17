@@ -14,6 +14,7 @@ if (file.exists(data_cde_file)) {
 }
 
 predefined_vars <- c("PRODUCTION", "TIMESTAMP","")
+default_factors <- c("lat", "lng", "year")
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
@@ -22,6 +23,7 @@ p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help=paste
 p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
+p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for summary aggregation: [", paste(unique(var_dic[factor!="",factor]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -44,6 +46,10 @@ avgVariables <- argv$average
 totTonVariables <- argv$total_ton
 suppressWarnings(if (is.na(variables) && is.na(totVariables) && is.na(avgVariables) && is.na(totTonVariables)) {
   variables <- predefined_vars
+})
+factors <- argv$factor
+suppressWarnings(if (is.na(factors)) {
+  factors <- default_factors
 })
 argv$period_annual <- TRUE
 
@@ -75,11 +81,12 @@ valid_entries <- df[
 print("Starting aggregation.")
 if (argv$period_annual) {
   print("Processing annual calculation.")
-  calc_production <- valid_entries[,`:=`(YEAR = trunc(HDAT/1000)), by = .(LATITUDE, LONGITUDE)]
-  calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = .(LATITUDE, LONGITUDE, YEAR)]
-  # aggregated <- calc_production[,.(HARVEST_DATE=mean(as.Date(paste0((HDAT)), "%Y%j"))),by = .(LATITUDE,LONGITUDE,YEAR)]
-  aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = .(LATITUDE,LONGITUDE,YEAR)]
-  final <- aggregated[,.(lat=LATITUDE,lng=LONGITUDE, year=YEAR)]
+  calc_production <- valid_entries
+  calc_production <- calc_production[,`:=`(year = trunc(HDAT/1000), lat = LATITUDE, lng = LONGITUDE, crop = CR, mgn = RUN_NAME)]
+  calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
+  # aggregated <- calc_production[,.(HARVEST_DATE=mean(as.Date(paste0((HDAT)), "%Y%j"))),by = factors]
+  aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
+  final <- aggregated[, ..factors]
   
   # execute predefined variable aggregation
   suppressWarnings(if (!is.na(variables)) {
@@ -88,11 +95,11 @@ if (argv$period_annual) {
         print(paste("Processing",  variable))
         if (variable == "TIMESTAMP") {
           calc_production[,`:=`(HDAT_ISO = as.Date(paste0(HDAT), "%Y%j"))]
-          aggregated[,(variable):= calc_production[,mean.Date(HDAT_ISO),by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          aggregated[,(variable):= calc_production[,mean.Date(HDAT_ISO),by = factors][,V1]]
           final[, timestamp := aggregated[,get(variable)]]
         } else if (variable == "PRODUCTION") {
-          calc_production[,(variable) := HARVEST_AREA * HWAH, by = .(LATITUDE, LONGITUDE)]
-          aggregated[, (variable):= calc_production[,sum(get(variable)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          calc_production[,(variable) := HARVEST_AREA * HWAH]
+          aggregated[, (variable):= calc_production[,sum(get(variable)), by = factors][,V1]]
           final[, production := aggregated[,round(get(variable)/1000)]]
         }
       } else {
@@ -110,8 +117,8 @@ if (argv$period_annual) {
         
         if (var_dic[name == variable, unit] == "kg/ha") {
           
-          calc_production[,(header):= get(variable) * HARVEST_AREA, by = .(LATITUDE, LONGITUDE)]
-          aggregated[, (header):= calc_production[,sum(get(header)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          calc_production[,(header):= get(variable) * HARVEST_AREA]
+          aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
           final[, (header):= aggregated[,get(header)]]
           
         } else {
@@ -136,16 +143,16 @@ if (argv$period_annual) {
           ## header_tot <- var_dic[name == variable, total]
           # header_tot <- paste0(variable, "_TOT")
           # if (!header_tot %in% colnames(calc_production)) {
-          #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA, by = .(LATITUDE, LONGITUDE)]
+          #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA]
           # }
-          aggregated[, (header):= calc_production[,sum(get(variable) * HARVEST_AREA_PCT), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          aggregated[, (header):= calc_production[,sum(get(variable) * HARVEST_AREA_PCT), by = factors][,V1]]
           aggregated[,(header):=get(header)/HARVEST_AREA_TOT]
           final[, (header):= aggregated[,get(header)]]
           
         } else if (var_dic[name == variable, unit] == "date") {
           
           calc_production[,(header):= as.Date(paste0(get(variable)), "%Y%j")]
-          aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = factors][,V1]]
           final[, (header) := aggregated[,get(header)]]
           
         } else {
@@ -167,8 +174,8 @@ if (argv$period_annual) {
         
         if (var_dic[name == variable, unit] == "kg/ha") {
           
-          calc_production[,(header):= get(variable) * HARVEST_AREA, by = .(LATITUDE, LONGITUDE)]
-          aggregated[, (header):= calc_production[,sum(get(header)), by = .(LATITUDE,LONGITUDE,YEAR)][,V1]]
+          calc_production[,(header):= get(variable) * HARVEST_AREA]
+          aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
           final[, (header):= aggregated[,round(get(header)/1000)]]
           
         } else {
