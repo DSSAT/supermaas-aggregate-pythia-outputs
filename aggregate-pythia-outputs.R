@@ -65,7 +65,13 @@ for(f in flist) {
   dts <- c(dts, list(data.table::fread(f)))
 }
 df <- data.table::rbindlist(dts)
-valid_entries <- df[EDAT > 0 & MDAT > 0 & ADAT > 0 & HDAT > 0 & HWAH >= 0]
+valid_entries <- df[
+  !is.na(as.Date(paste0(EDAT), "%Y%j")) &
+  !is.na(as.Date(paste0(MDAT), "%Y%j")) &
+  !is.na(as.Date(paste0(ADAT), "%Y%j")) &
+  !is.na(as.Date(paste0(HDAT), "%Y%j")) &
+  HWAH >= 0
+]
 print("Starting aggregation.")
 if (argv$period_annual) {
   print("Processing annual calculation.")
