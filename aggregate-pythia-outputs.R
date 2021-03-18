@@ -202,9 +202,9 @@ suppressWarnings(if (!is.na(totTonVariables)) {
   }
 })
 
-if ("timestamp" %in% colnames(final) && !"year" %in% var_dic[name %in% factors, unit]) {
-  final[, year:=NULL]
-}
+# if ("timestamp" %in% colnames(final) || !"year" %in% var_dic[name %in% factors, unit]) {
+#   final[, year:=NULL]
+# }
 
 data.table::fwrite(final, file = out_file)
 # }
