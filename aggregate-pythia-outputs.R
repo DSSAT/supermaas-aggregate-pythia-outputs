@@ -24,7 +24,7 @@ p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("V
 p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for summary aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "]"))
-p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
+# p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
 argv <- argparser::parse_args(p)
@@ -52,7 +52,7 @@ factors <- argv$factor
 suppressWarnings(if (is.na(factors)) {
   factors <- default_factors
 })
-argv$period_annual <- TRUE
+# argv$period_annual <- TRUE
 
 if (!dir.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
@@ -86,128 +86,128 @@ if (!"PYEAR" %in% colnames(valid_entries)) {
   valid_entries[,`:=`(PYEAR = trunc(PDAT/1000))]
 }
 print("Starting aggregation.")
-if (argv$period_annual) {
-  print("Processing annual calculation.")
-  calc_production <- valid_entries
-  calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
-  aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
-  final <- aggregated[, ..factors]
-  setnames(final, var_dic[name %in% factors, factor])
-  
-  # execute predefined variable aggregation
-  suppressWarnings(if (!is.na(variables)) {
-    for (variable in variables) {
-      if (variable %in% predefined_vars) {
-        print(paste("Processing",  variable))
-        if (variable == "TIMESTAMP") {
-          if ("year" %in% var_dic[name %in% factors, unit]) {
-            aggregated[,(variable):= calc_production[,mean.Date(HYEAR),by = factors][,V1]]
-          } else {
-            aggregated[,(variable):= calc_production[,format(as.Date("1970-01-01") + mean(as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d"),by = factors][,V1]]
-          }
-          final[, timestamp := aggregated[,get(variable)]]
-        } else if (variable == "PRODUCTION") {
-          calc_production[,(variable) := HARVEST_AREA * HWAH]
-          aggregated[, (variable):= calc_production[,sum(as.numeric(get(variable))), by = factors][,V1]]
-          final[, production := aggregated[,round(get(variable)/1000)]]
-        }
-      } else {
-        print(paste("Processing",  variable, "is unsupported and skipped"))
-      }
-    }
-  })
-  
-  # execute summary aggregation
-  suppressWarnings(if (!is.na(totVariables)) {
-    for (variable in totVariables) {
-      header <- var_dic[name == variable, total]
-      if (header != "") {
-        print(paste("Processing summary for",  variable))
-        
-        if (var_dic[name == variable, unit] == "kg/ha") {
-          
-          calc_production[,(header):= as.numeric(get(variable)) * HARVEST_AREA]
-          aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
-          final[, (header):= aggregated[,get(header)]]
-          
+# if (argv$period_annual) {
+  # print("Processing annual calculation.")
+calc_production <- valid_entries
+calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
+aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
+final <- aggregated[, ..factors]
+setnames(final, var_dic[name %in% factors, factor])
+
+# execute predefined variable aggregation
+suppressWarnings(if (!is.na(variables)) {
+  for (variable in variables) {
+    if (variable %in% predefined_vars) {
+      print(paste("Processing",  variable))
+      if (variable == "TIMESTAMP") {
+        if ("year" %in% var_dic[name %in% factors, unit]) {
+          aggregated[,(variable):= calc_production[,mean.Date(HYEAR),by = factors][,V1]]
         } else {
-          print(paste("Processing summary for",  variable, "is unsupported and skipped"))
+          aggregated[,(variable):= calc_production[,format(as.Date("1970-01-01") + mean(as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d"),by = factors][,V1]]
         }
+        final[, timestamp := aggregated[,get(variable)]]
+      } else if (variable == "PRODUCTION") {
+        calc_production[,(variable) := HARVEST_AREA * HWAH]
+        aggregated[, (variable):= calc_production[,sum(as.numeric(get(variable))), by = factors][,V1]]
+        final[, production := aggregated[,round(get(variable)/1000)]]
+      }
+    } else {
+      print(paste("Processing",  variable, "is unsupported and skipped"))
+    }
+  }
+})
+
+# execute summary aggregation
+suppressWarnings(if (!is.na(totVariables)) {
+  for (variable in totVariables) {
+    header <- var_dic[name == variable, total]
+    if (header != "") {
+      print(paste("Processing summary for",  variable))
+      
+      if (var_dic[name == variable, unit] == "kg/ha") {
+        
+        calc_production[,(header):= as.numeric(get(variable)) * HARVEST_AREA]
+        aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
+        final[, (header):= aggregated[,get(header)]]
         
       } else {
         print(paste("Processing summary for",  variable, "is unsupported and skipped"))
       }
+      
+    } else {
+      print(paste("Processing summary for",  variable, "is unsupported and skipped"))
     }
-  })
-  
-  # execute average aggregation
-  suppressWarnings(if (!is.na(avgVariables)) {
-    for (variable in avgVariables) {
-      header <- var_dic[name == variable, average]
-      if (header != "") {
-        print(paste("Processing average for",  variable))
+  }
+})
+
+# execute average aggregation
+suppressWarnings(if (!is.na(avgVariables)) {
+  for (variable in avgVariables) {
+    header <- var_dic[name == variable, average]
+    if (header != "") {
+      print(paste("Processing average for",  variable))
+      
+      if (var_dic[name == variable, unit] == "kg/ha") {
         
-        if (var_dic[name == variable, unit] == "kg/ha") {
-          
-          ## header_tot <- var_dic[name == variable, total]
-          # header_tot <- paste0(variable, "_TOT")
-          # if (!header_tot %in% colnames(calc_production)) {
-          #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA]
-          # }
-          aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
-          aggregated[, (header):=get(header)/HARVEST_AREA_TOT]
-          final[, (header):= aggregated[,get(header)]]
-          
-        } else if (var_dic[name == variable, unit] == "date") {
-          
-          calc_production[,(header):= as.Date(paste0(get(variable)), "%Y%j")]
-          if ("year" %in% var_dic[name %in% factors, unit]) {
-            aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = factors][,V1]]
-          } else {
-            
-            aggregated[,(header):= calc_production[,format(as.Date("1970-01-01") + sum(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01"))) * HARVEST_AREA_PCT), "%m-%d"),by = factors][,V1]]
-          }
-          final[, (header) := aggregated[,get(header)]]
-          
+        ## header_tot <- var_dic[name == variable, total]
+        # header_tot <- paste0(variable, "_TOT")
+        # if (!header_tot %in% colnames(calc_production)) {
+        #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA]
+        # }
+        aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
+        aggregated[, (header):=get(header)/HARVEST_AREA_TOT]
+        final[, (header):= aggregated[,get(header)]]
+        
+      } else if (var_dic[name == variable, unit] == "date") {
+        
+        calc_production[,(header):= as.Date(paste0(get(variable)), "%Y%j")]
+        if ("year" %in% var_dic[name %in% factors, unit]) {
+          aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = factors][,V1]]
         } else {
-          print(paste("Processing average for",  variable, "is unsupported and skipped"))
+          
+          aggregated[,(header):= calc_production[,format(as.Date("1970-01-01") + sum(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01"))) * HARVEST_AREA_PCT), "%m-%d"),by = factors][,V1]]
         }
+        final[, (header) := aggregated[,get(header)]]
         
       } else {
         print(paste("Processing average for",  variable, "is unsupported and skipped"))
       }
+      
+    } else {
+      print(paste("Processing average for",  variable, "is unsupported and skipped"))
     }
-  })
-  
-  # execute total_ton aggregation
-  suppressWarnings(if (!is.na(totTonVariables)) {
-    for (variable in totTonVariables) {
-      header <- var_dic[name == variable, total_ton]
-      if (header != "") {
-        print(paste("Processing summary (unit=ton) for",  variable))
+  }
+})
+
+# execute total_ton aggregation
+suppressWarnings(if (!is.na(totTonVariables)) {
+  for (variable in totTonVariables) {
+    header <- var_dic[name == variable, total_ton]
+    if (header != "") {
+      print(paste("Processing summary (unit=ton) for",  variable))
+      
+      if (var_dic[name == variable, unit] == "kg/ha") {
         
-        if (var_dic[name == variable, unit] == "kg/ha") {
-          
-          calc_production[,(header):= as.numeric(get(variable)) * HARVEST_AREA]
-          aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
-          final[, (header):= aggregated[,round(get(header)/1000)]]
-          
-        } else {
-          print(paste("Processing summary (unit=ton) for",  variable, "is unsupported and skipped"))
-        }
+        calc_production[,(header):= as.numeric(get(variable)) * HARVEST_AREA]
+        aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
+        final[, (header):= aggregated[,round(get(header)/1000)]]
         
       } else {
         print(paste("Processing summary (unit=ton) for",  variable, "is unsupported and skipped"))
       }
+      
+    } else {
+      print(paste("Processing summary (unit=ton) for",  variable, "is unsupported and skipped"))
     }
-  })
-  
-  if ("timestamp" %in% colnames(final) && !"year" %in% var_dic[name %in% factors, unit]) {
-    final[, year:=NULL]
   }
-  
-  data.table::fwrite(final, file = out_file)
+})
+
+if ("timestamp" %in% colnames(final) && !"year" %in% var_dic[name %in% factors, unit]) {
+  final[, year:=NULL]
 }
+
+data.table::fwrite(final, file = out_file)
+# }
 # if (argv$period_month) {
 #   #print("Processing monthly calculation.")
 #   print("Monthly aggregation has not been supported yet")
