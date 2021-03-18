@@ -81,6 +81,9 @@ valid_entries <- df[
 if (!"HYEAR" %in% colnames(valid_entries)) {
   valid_entries[,`:=`(HYEAR = trunc(HDAT/1000))]
 }
+if (!"PYEAR" %in% colnames(valid_entries)) {
+  valid_entries[,`:=`(PYEAR = trunc(PDAT/1000))]
+}
 print("Starting aggregation.")
 if (argv$period_annual) {
   print("Processing annual calculation.")
