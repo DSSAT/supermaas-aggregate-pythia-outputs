@@ -14,7 +14,7 @@ if (file.exists(data_cde_file)) {
 }
 
 predefined_vars <- c("PRODUCTION", "TIMESTAMP","")
-default_factors <- c("lat", "lng", "year")
+default_factors <- c("LATITUDE", "LONGITUDE", "HYEAR")
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
@@ -23,7 +23,7 @@ p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help=paste
 p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
-p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for summary aggregation: [", paste(unique(var_dic[factor!="",factor]), collapse=","), "]"))
+p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for summary aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -78,15 +78,17 @@ valid_entries <- df[
   !is.na(as.Date(paste0(HDAT), "%Y%j")) &
   HWAH >= 0
 ]
+if (!"HYEAR" %in% colnames(valid_entries)) {
+  valid_entries[,`:=`(HYEAR = trunc(HDAT/1000))]
+}
 print("Starting aggregation.")
 if (argv$period_annual) {
   print("Processing annual calculation.")
   calc_production <- valid_entries
-  calc_production <- calc_production[,`:=`(year = trunc(HDAT/1000), lat = LATITUDE, lng = LONGITUDE, crop = CR, mgn = RUN_NAME)]
   calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
-  # aggregated <- calc_production[,.(HARVEST_DATE=mean(as.Date(paste0((HDAT)), "%Y%j"))),by = factors]
   aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
   final <- aggregated[, ..factors]
+  setnames(final, var_dic[name %in% factors, factor])
   
   # execute predefined variable aggregation
   suppressWarnings(if (!is.na(variables)) {
