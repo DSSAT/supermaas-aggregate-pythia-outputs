@@ -99,8 +99,11 @@ if (argv$period_annual) {
       if (variable %in% predefined_vars) {
         print(paste("Processing",  variable))
         if (variable == "TIMESTAMP") {
-          calc_production[,`:=`(HDAT_ISO = as.Date(paste0(HDAT), "%Y%j"))]
-          aggregated[,(variable):= calc_production[,mean.Date(HDAT_ISO),by = factors][,V1]]
+          if ("year" %in% var_dic[name %in% factors, unit]) {
+            aggregated[,(variable):= calc_production[,mean.Date(HYEAR),by = factors][,V1]]
+          } else {
+            aggregated[,(variable):= calc_production[,format(as.Date("1970-01-01") + mean(as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d"),by = factors][,V1]]
+          }
           final[, timestamp := aggregated[,get(variable)]]
         } else if (variable == "PRODUCTION") {
           calc_production[,(variable) := HARVEST_AREA * HWAH]
@@ -157,7 +160,12 @@ if (argv$period_annual) {
         } else if (var_dic[name == variable, unit] == "date") {
           
           calc_production[,(header):= as.Date(paste0(get(variable)), "%Y%j")]
-          aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = factors][,V1]]
+          if ("year" %in% var_dic[name %in% factors, unit]) {
+            aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = factors][,V1]]
+          } else {
+            
+            aggregated[,(header):= calc_production[,format(as.Date("1970-01-01") + sum(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01"))) * HARVEST_AREA_PCT), "%m-%d"),by = factors][,V1]]
+          }
           final[, (header) := aggregated[,get(header)]]
           
         } else {
