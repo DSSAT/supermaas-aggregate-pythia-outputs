@@ -104,7 +104,7 @@ if (argv$period_annual) {
           final[, timestamp := aggregated[,get(variable)]]
         } else if (variable == "PRODUCTION") {
           calc_production[,(variable) := HARVEST_AREA * HWAH]
-          aggregated[, (variable):= calc_production[,sum(get(variable)), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(as.numeric(get(variable))), by = factors][,V1]]
           final[, production := aggregated[,round(get(variable)/1000)]]
         }
       } else {
