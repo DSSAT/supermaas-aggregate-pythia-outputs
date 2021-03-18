@@ -30,6 +30,7 @@ p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="
 argv <- argparser::parse_args(p)
 
 # for test only
+# argv <- argparser::parse_args(p, c("test\\data\\case1", "test\\output\\report1.csv", "-v", "PRODUCTION", "TIMESTAMP", "-t", "CWAM", "HWAH", "-a", "HDAT", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2.csv", "-v", "PRODUCTION", "-t", "CWAM", "HWAH", "-a", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
@@ -201,7 +202,7 @@ if (argv$period_annual) {
     }
   })
   
-  if ("timestamp" %in% colnames(final)) {
+  if ("timestamp" %in% colnames(final) && !"year" %in% var_dic[name %in% factors, unit]) {
     final[, year:=NULL]
   }
   
