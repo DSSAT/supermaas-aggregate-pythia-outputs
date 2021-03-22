@@ -17,7 +17,7 @@ predefined_vars <- c("PRODUCTION", "TIMESTAMP","")
 default_factors <- c("LATITUDE", "LONGITUDE", "HYEAR")
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
-p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
+p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
 p <- argparser::add_argument(p, "output", "final output of the aggregated files")
 p <- argparser::add_argument(p, "--variables", short="-v", nargs=Inf, help=paste0("Variable names for predefined aggregation: [", paste(predefined_vars, collapse=","), "]"))
 p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("Variable names for summary aggregation: [", paste(var_dic[total!="",name], collapse=","), "]"))
@@ -34,6 +34,8 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2.csv", "-v", "PRODUCTION", "-t", "CWAM", "HWAH", "-a", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
+# argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
+# argv <- argparser::parse_args(p, c("test\\data\\case6\\pp_GGCMI_Maize_ir.csv", "test\\output\\report6.csv", "-a", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -54,7 +56,7 @@ suppressWarnings(if (is.na(factors)) {
 })
 # argv$period_annual <- TRUE
 
-if (!dir.exists(in_dir)) {
+if (!dir.exists(in_dir) && !file.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
 }
 
@@ -67,7 +69,11 @@ if (!dir.exists(out_dir)) {
 flist <- list()
 dts <- list()
 print("Loading files for aggregation.")
-flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
+if (!dir.exists(in_dir)) {
+  flist[1] = in_dir
+} else {
+  flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
+}
 for(f in flist) {
   dts <- c(dts, list(data.table::fread(f)))
 }

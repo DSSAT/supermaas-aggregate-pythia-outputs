@@ -14,7 +14,7 @@ if (file.exists(data_cde_file)) {
 }
 
 p <- argparser::arg_parser("VAlidate Pythia outputs for World Modelers")
-p <- argparser::add_argument(p, "input", "Pythia output directory to aggregate")
+p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
 p <- argparser::add_argument(p, "--output", short = "-o", "Path to the file of validation report")
 p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable names for validation: [", paste(var_dic[unit != "text", name], collapse = ","), "]"))
 p <- argparser::add_argument(p, "--min", short = "-i", flag = TRUE, help = "Report minimum value for range check")
@@ -37,14 +37,18 @@ suppressWarnings(if (is.na(variables)) {
   variables <- c("HWAH", "EDAT", "MDAT", "ADAT", "HDAT");
 })
 
-if (!dir.exists(in_dir)) {
+if (!dir.exists(in_dir) && !file.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
 }
 
 flist <- list()
 dts <- list()
 print("Loading files for validation")
-flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
+if (!dir.exists(in_dir)) {
+  flist[1] = in_dir
+} else {
+  flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
+}
 for(f in flist) {
   dts <- c(dts, list(data.table::fread(f)))
 }
