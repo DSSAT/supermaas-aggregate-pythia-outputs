@@ -35,7 +35,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
-# argv <- argparser::parse_args(p, c("test\\data\\case6\\pp_GGCMI_Maize_ir.csv", "test\\output\\report6.csv", "-a", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
+# argv <- argparser::parse_args(p, c("test\\data\\case6\\pp_GGCMI_Maize_ir.csv", "test\\output\\report6.csv", "-a", "PRCP", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -153,7 +153,7 @@ suppressWarnings(if (!is.na(avgVariables)) {
     if (header != "") {
       print(paste("Processing average for",  variable))
       
-      if (var_dic[name == variable, unit] == "kg/ha") {
+      if (var_dic[name == variable, unit] %in% c("kg/ha", "mm")) {
         
         ## header_tot <- var_dic[name == variable, total]
         # header_tot <- paste0(variable, "_TOT")
