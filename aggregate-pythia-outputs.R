@@ -155,7 +155,6 @@ suppressWarnings(if (!is.na(avgVariables)) {
         #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA]
         # }
         aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
-        aggregated[, (header):=get(header)/HARVEST_AREA_TOT]
         final[, (header):= aggregated[,get(header)]]
         
       } else if (var_dic[name == variable, unit] == "date") {
