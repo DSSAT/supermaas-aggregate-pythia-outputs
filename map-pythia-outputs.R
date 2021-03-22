@@ -67,7 +67,7 @@ for (variable in variables) {
   if (variable == "PRODUCTION") {
     headers <- "production"
   } else {
-    headers <- paste0(variable, c("_TOT", "_AVG"));
+    headers <- paste0(variable, c("_TOT", "_AVE"));
   }
   for (variable in headers) {
     if (variable %in% colnames(plot_yld_data)) {
