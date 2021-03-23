@@ -24,6 +24,8 @@ argv <- argparser::parse_args(p)
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\report5.csv", "test\\data\\case5\\ETH_Kelem_shp\\Kelem_Wellega_Oramia.shp", "test\\output", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\report5.csv", "test\\data\\case5\\ETH_Kelem_shp\\Kelem_Wellega_Oramia.shp", "test\\output"))
+# argv <- argparser::parse_args(p, c("test\\data\\case7\\report6.csv", "test\\data\\case7\\gadm36_GHA_0.shp", "test\\output", "-v", "HWAH"))
+# argv <- argparser::parse_args(p, c("test\\data\\case8\\agg_hist4p_mai_ir.csv", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "test\\output", "-v", "HWAH", "PRCP"))
 
 library(ggplot2)
 library(sf)
@@ -74,7 +76,8 @@ for (variable in variables) {
       print(paste0("Processing map for ", variable))
       ggplot()+
         geom_sf(data=plot_yld_data, aes(color=get(variable)))+
-        geom_sf(data=shp_data, size=0.75, alpha=0.5, fill="lightgrey")+
+        geom_sf(data=shp_data, size=0.25, alpha=0.5, fill="grey")+
+        # borders()
         labs(x="Longitude", y="Latitude", color=variable)+
         scale_color_gradientn(colours = rainbow(7),
                               n.breaks=6
