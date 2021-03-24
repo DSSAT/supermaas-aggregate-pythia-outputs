@@ -26,6 +26,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\report5.csv", "test\\data\\case5\\ETH_Kelem_shp\\Kelem_Wellega_Oramia.shp", "test\\output"))
 # argv <- argparser::parse_args(p, c("test\\data\\case7\\report6.csv", "test\\data\\case7\\gadm36_GHA_0.shp", "test\\output", "-v", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case8\\agg_hist4p_mai_ir.csv", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "test\\output", "-v", "HWAH", "PRCP"))
+# argv <- argparser::parse_args(p, c("test\\data\\case10\\agg_pp_GGCMI_Maize_ir.csv", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "test\\output", "-v", "HWAH", "PRCP"))
 
 library(ggplot2)
 library(sf)

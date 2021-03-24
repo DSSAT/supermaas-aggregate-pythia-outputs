@@ -36,6 +36,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
 # argv <- argparser::parse_args(p, c("test\\data\\case6\\pp_GGCMI_Maize_ir.csv", "test\\output\\report6.csv", "-a", "PRCP", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
+# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2.csv", "-a", "PRCP", "HWAH", "-f","LONGITUDE", "LATITUDE"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -98,7 +99,11 @@ calc_production <- valid_entries
 calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
 aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
 final <- aggregated[, ..factors]
-setnames(final, var_dic[name %in% factors, factor])
+headers <- c()
+for (faName in factors) {
+  headers <- c(headers, var_dic[name==faName, factor])
+}
+setnames(final, headers)
 
 # execute predefined variable aggregation
 suppressWarnings(if (!is.na(variables)) {
