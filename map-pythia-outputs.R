@@ -78,15 +78,15 @@ for (variable in variables) {
       ggplot()+
         geom_sf(data=plot_yld_data, aes(color=get(variable)))+
         geom_sf(data=shp_data, size=0.25, alpha=0.5, fill="grey")+
-        # borders()
         labs(x="Longitude", y="Latitude", color=variable)+
         scale_color_gradientn(colours = rainbow(7),
                               n.breaks=6
                               # ,labels=c(0,5, 10, 15, 20, 25)
         )+
-        annotation_scale(location = "bl", width_hint = 0.4) +
-        annotation_north_arrow(location = "bl", which_north = "true", 
+        annotation_scale(location = "bl", width_hint = 0.2) +
+        annotation_north_arrow(location = "bl", which_north = "true",
                                pad_x = unit(0.05, "in"), pad_y = unit(0.25, "in"),
+                               width = unit(0.35, "in"), height = unit(0.35, "in"),
                                style = north_arrow_fancy_orienteering)
       
       
