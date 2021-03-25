@@ -34,7 +34,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2.csv", "-v", "PRODUCTION", "-t", "CWAM", "HWAH", "-a", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
-# argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
+# argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "GSD", "ETFD", "HIAM", "FTHD", "-f", "LATITUDE", "LONGITUDE"))
 # argv <- argparser::parse_args(p, c("test\\data\\case6\\pp_GGCMI_Maize_ir.csv", "test\\output\\report6.csv", "-a", "PRCP", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2.csv", "-a", "PRCP", "HWAH", "-f","LONGITUDE", "LATITUDE"))
 
@@ -92,6 +92,16 @@ if (!"HYEAR" %in% colnames(valid_entries)) {
 if (!"PYEAR" %in% colnames(valid_entries)) {
   valid_entries[,`:=`(PYEAR = trunc(PDAT/1000))]
 }
+if (!"GSD" %in% colnames(valid_entries)) {
+  valid_entries[,`:=`(GSD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PDAT), "%Y%j")))]
+}
+if (!"ETFD" %in% colnames(valid_entries)) {
+  valid_entries[,`:=`(GSD = as.integer(as.Date(paste0(ADAT), "%Y%j") - as.Date(paste0(EDAT), "%Y%j")))]
+}
+if (!"FTHD" %in% colnames(valid_entries)) {
+  valid_entries[,`:=`(GSD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(ADAT), "%Y%j")))]
+}
+
 print("Starting aggregation.")
 # if (argv$period_annual) {
   # print("Processing annual calculation.")
@@ -158,17 +168,7 @@ suppressWarnings(if (!is.na(avgVariables)) {
     if (header != "") {
       print(paste("Processing average for",  variable))
       
-      if (var_dic[name == variable, unit] %in% c("kg/ha", "mm")) {
-        
-        ## header_tot <- var_dic[name == variable, total]
-        # header_tot <- paste0(variable, "_TOT")
-        # if (!header_tot %in% colnames(calc_production)) {
-        #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA]
-        # }
-        aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
-        final[, (header):= aggregated[,get(header)]]
-        
-      } else if (var_dic[name == variable, unit] == "date") {
+      if (var_dic[name == variable, unit] == "date") {
         
         calc_production[,(header):= as.Date(paste0(get(variable)), "%Y%j")]
         if ("year" %in% var_dic[name %in% factors, unit]) {
@@ -180,7 +180,15 @@ suppressWarnings(if (!is.na(avgVariables)) {
         final[, (header) := aggregated[,get(header)]]
         
       } else {
-        print(paste("Processing average for",  variable, "is unsupported and skipped"))
+        
+        ## header_tot <- var_dic[name == variable, total]
+        # header_tot <- paste0(variable, "_TOT")
+        # if (!header_tot %in% colnames(calc_production)) {
+        #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA]
+        # }
+        aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
+        final[, (header):= aggregated[,get(header)]]
+        
       }
       
     } else {
