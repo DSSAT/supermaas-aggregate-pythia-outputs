@@ -28,7 +28,7 @@ argv <- argparser::parse_args(p)
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv"))
-# argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "--min","--max","--med", "--std", "-n"))
+# argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "FTHD", "--min","--max","--med", "--std", "-n"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -91,6 +91,11 @@ if (argv$std) {
   report[,`:=`(std=rnorm(0))]
 }
 for (variable in variables) {
+  if (!variable %in% colnames(df)) {
+    print(paste("Processing",  variable, ", which is missing and skipped"))
+    next
+  }
+  print(paste("Processing",  variable))
   total <- df[, .N]
   if (variable %in% var_dic[unit == "date", name]) {
     header <- paste0(variable, "_ISO")

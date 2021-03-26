@@ -133,7 +133,7 @@ suppressWarnings(if (!is.na(variables)) {
         final[, production := aggregated[,round(get(variable)/1000)]]
       }
     } else {
-      print(paste("Processing",  variable, "is unsupported and skipped"))
+      print(paste("Processing",  variable, ", which is unsupported and skipped"))
     }
   }
 })
@@ -141,6 +141,10 @@ suppressWarnings(if (!is.na(variables)) {
 # execute summary aggregation
 suppressWarnings(if (!is.na(totVariables)) {
   for (variable in totVariables) {
+    if (!variable %in% colnames(calc_production)) {
+      print(paste("Processing summary for",  variable, ", which is missing and skipped"))
+      next
+    }
     header <- var_dic[name == variable, total]
     if (header != "") {
       print(paste("Processing summary for",  variable))
@@ -152,11 +156,11 @@ suppressWarnings(if (!is.na(totVariables)) {
         final[, (header):= aggregated[,get(header)]]
         
       } else {
-        print(paste("Processing summary for",  variable, "is unsupported and skipped"))
+        print(paste("Processing summary for",  variable, ", which is unsupported and skipped"))
       }
       
     } else {
-      print(paste("Processing summary for",  variable, "is unsupported and skipped"))
+      print(paste("Processing summary for",  variable, ", which is unsupported and skipped"))
     }
   }
 })
@@ -164,6 +168,10 @@ suppressWarnings(if (!is.na(totVariables)) {
 # execute average aggregation
 suppressWarnings(if (!is.na(avgVariables)) {
   for (variable in avgVariables) {
+    if (!variable %in% colnames(calc_production)) {
+      print(paste("Processing average for",  variable, ", which is missing and skipped"))
+      next
+    }
     header <- var_dic[name == variable, average]
     if (header != "") {
       print(paste("Processing average for",  variable))
@@ -192,7 +200,7 @@ suppressWarnings(if (!is.na(avgVariables)) {
       }
       
     } else {
-      print(paste("Processing average for",  variable, "is unsupported and skipped"))
+      print(paste("Processing average for",  variable, ", which is unsupported and skipped"))
     }
   }
 })
@@ -200,6 +208,10 @@ suppressWarnings(if (!is.na(avgVariables)) {
 # execute total_ton aggregation
 suppressWarnings(if (!is.na(totTonVariables)) {
   for (variable in totTonVariables) {
+    if (!variable %in% colnames(calc_production)) {
+      print(paste("Processing summary (unit=ton) for",  variable, ", which is missing and skipped"))
+      next
+    }
     header <- var_dic[name == variable, total_ton]
     if (header != "") {
       print(paste("Processing summary (unit=ton) for",  variable))
@@ -211,11 +223,11 @@ suppressWarnings(if (!is.na(totTonVariables)) {
         final[, (header):= aggregated[,round(get(header)/1000)]]
         
       } else {
-        print(paste("Processing summary (unit=ton) for",  variable, "is unsupported and skipped"))
+        print(paste("Processing summary (unit=ton) for",  variable, ", which is unsupported and skipped"))
       }
       
     } else {
-      print(paste("Processing summary (unit=ton) for",  variable, "is unsupported and skipped"))
+      print(paste("Processing summary (unit=ton) for",  variable, ", which is unsupported and skipped"))
     }
   }
 })
