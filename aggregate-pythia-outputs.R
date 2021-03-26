@@ -95,10 +95,10 @@ if (!"PYEAR" %in% colnames(valid_entries)) {
 if (!"GSD" %in% colnames(valid_entries)) {
   valid_entries[,`:=`(GSD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PDAT), "%Y%j")))]
 }
-if (!"ETFD" %in% colnames(valid_entries)) {
+if (!"ETFD" %in% colnames(valid_entries) && "ADAT" %in% colnames(valid_entries) && "EDAT" %in% colnames(valid_entries)) {
   valid_entries[,`:=`(ETFD = as.integer(as.Date(paste0(ADAT), "%Y%j") - as.Date(paste0(EDAT), "%Y%j")))]
 }
-if (!"FTHD" %in% colnames(valid_entries)) {
+if (!"FTHD" %in% colnames(valid_entries) && "ADAT" %in% colnames(valid_entries)) {
   valid_entries[,`:=`(FTHD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(ADAT), "%Y%j")))]
 }
 

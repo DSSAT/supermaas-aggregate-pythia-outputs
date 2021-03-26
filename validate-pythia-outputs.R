@@ -53,6 +53,22 @@ for(f in flist) {
   dts <- c(dts, list(data.table::fread(f)))
 }
 df <- data.table::rbindlist(dts)
+
+if (!"HYEAR" %in% colnames(df)) {
+  df[,`:=`(HYEAR = trunc(HDAT/1000))]
+}
+if (!"PYEAR" %in% colnames(df)) {
+  df[,`:=`(PYEAR = trunc(PDAT/1000))]
+}
+if (!"GSD" %in% colnames(df)) {
+  df[,`:=`(GSD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PDAT), "%Y%j")))]
+}
+if (!"ETFD" %in% colnames(df) && "ADAT" %in% colnames(df) && "EDAT" %in% colnames(df)) {
+  df[,`:=`(ETFD = as.integer(as.Date(paste0(ADAT), "%Y%j") - as.Date(paste0(EDAT), "%Y%j")))]
+}
+if (!"FTHD" %in% colnames(df) && "ADAT" %in% colnames(df)) {
+  df[,`:=`(FTHD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(ADAT), "%Y%j")))]
+}
 print("Starting validation.")
 report <- data.table(Variable=rnorm(0),
                      "Invalid_pct" = rnorm(0),
