@@ -44,7 +44,7 @@ suppressWarnings(if (is.na(variables)) {
   variables <- predefined_vars;
 })
 
-base_file_name = tools::file_path_sans_ext(basename(out_file))
+base_file_name <- tools::file_path_sans_ext(basename(out_file))
 file_ext = tools::file_ext(out_file)
 if (file_ext == "") {
   out_dir <- out_file
