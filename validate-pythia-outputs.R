@@ -15,8 +15,7 @@ if (file.exists(data_cde_file)) {
 
 drawMap <- function(plotData, shpData, cateoryText, variable){
   if (plotData[,.N] > 0) {
-    plotData[,(variable):=V1]
-    plotData[,V1:=NULL]
+    setnames(plotData, colnames(plotData)[length(colnames(plotData))], variable)
     plotDataSf <- st_as_sf(plotData, coords = c("LONGITUDE", "LATITUDE"), crs =4326) #converting into spatial data
     st_crs(plotDataSf)
     ggplot()+
@@ -61,6 +60,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "FTHD", "--min","--max","--med", "--std", "-n"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_rf.csv", "-o", "test\\output\\report10\\report10.csv", "-p", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "ETFD", "FTHD", "HIAM", "--min","--max", "--mean", "--med", "--std", "-n"))
+# argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "-o", "test\\output\\report11\\report11.csv", "-p", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "ETFD", "FTHD", "HIAM", "--min","--max", "--mean", "--med", "--std", "-n"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -233,8 +233,16 @@ for (variable in variables) {
   if(!is.na(out_dir) && outlierReport[,.N] > 0) {
     data.table::fwrite(outlierReport, file = file.path(out_dir, paste0(base_file_name, "_", variable, "_outlier_min_max.csv")))
     if (!is.na(shpData)) {
-      drawMap(valid_entries[get(header) < min, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))][,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_M", variable)
-      drawMap(valid_entries[get(header) > max, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))][,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_M", variable)
+      mapPlotData <- valid_entries[get(header) < min, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+      if(mapPlotData[,.N] > 0) {
+        drawMap(mapPlotData[,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_M", variable)
+        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_cnt_M", variable)
+      }
+      mapPlotData <- valid_entries[get(header) > max, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+      if(mapPlotData[,.N] > 0) {
+        drawMap(mapPlotData[,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_M", variable)
+        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_cnt_M", variable)
+      }
     }
   }
 
@@ -254,8 +262,16 @@ for (variable in variables) {
   if(!is.na(out_dir) && outlierReport[,.N] > 0) {
     data.table::fwrite(outlierReport, file = file.path(out_dir, paste0(base_file_name, "_", variable, "_outlier_z_score.csv")))
     if (!is.na(shpData)) {
-      drawMap(valid_entries[(mean-get(header))/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))][,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, paste0("outlier_min_Z",zscore), variable)
-      drawMap(valid_entries[(get(header)-mean)/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))][,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, paste0("outlier_max_Z",zscore), variable)
+      mapPlotData <- valid_entries[(mean-get(header))/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+      if(mapPlotData[,.N] > 0) {
+        drawMap(mapPlotData[,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_Z", variable)
+        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_cnt_Z", variable)
+      }
+      mapPlotData <- valid_entries[(get(header)-mean)/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+      if(mapPlotData[,.N] > 0) {
+        drawMap(mapPlotData[,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_Z", variable)
+        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_cnt_Z", variable)
+      }
     }
   }
   
