@@ -44,7 +44,7 @@ drawMap <- function(plotData, shpData, cateoryText, variable){
 p <- argparser::arg_parser("VAlidate Pythia outputs for World Modelers")
 p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
 p <- argparser::add_argument(p, "--output", short = "-o", "Path to the file of validation report")
-p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable names for validation: [", paste(var_dic[unit != "text", name], collapse = ","), "]"))
+p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable names for validation: [", paste(var_dic[, name], collapse = ","), "]"))
 p <- argparser::add_argument(p, "--min", short = "-i", flag = TRUE, help = "Report minimum value for range check")
 p <- argparser::add_argument(p, "--max", short = "-a", flag = TRUE, help = "Report maximum value for range check")
 p <- argparser::add_argument(p, "--mean", short = "-e", flag = TRUE, help = "Report mean value for range check")
@@ -61,6 +61,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case3", "-o", "test\\output\\report3.csv", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "FTHD", "--min","--max","--med", "--std", "-n"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_rf.csv", "-o", "test\\output\\report10\\report10.csv", "-p", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "ETFD", "FTHD", "HIAM", "--min","--max", "--mean", "--med", "--std", "-n"))
 # argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "-o", "test\\output\\report11\\report11.csv", "-p", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "-v", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "ETFD", "FTHD", "HIAM", "--min","--max", "--mean", "--med", "--std", "-n"))
+# argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "-o", "test\\output\\report11\\report11.csv", "-p", "test\\data\\case8\\05d_pt_land2_soil_grid_bnd.shp", "-v", "ADMLV0", "PDAT", "MDAT", "HDAT","HWAM", "TMAXA", "TMINA", "PRCP", "GSD", "ETFD", "FTHD", "HIAM", "--min","--max", "--mean", "--med", "--std", "-n"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -112,20 +113,84 @@ for(f in flist) {
 df <- data.table::rbindlist(dts)
 
 # Create pre-processed columns
-if (!"HYEAR" %in% colnames(df)) {
+colNames <- colnames(df)
+if (!"HYEAR" %in% colNames) {
   df[,`:=`(HYEAR = trunc(HDAT/1000))]
 }
-if (!"PYEAR" %in% colnames(df)) {
+if (!"PYEAR" %in% colNames) {
   df[,`:=`(PYEAR = trunc(PDAT/1000))]
 }
-if (!"GSD" %in% colnames(df)) {
+if (!"GSD" %in% colNames) {
   df[,`:=`(GSD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PDAT), "%Y%j")))]
 }
-if (!"ETFD" %in% colnames(df) && "ADAT" %in% colnames(df) && "EDAT" %in% colnames(df)) {
+if (!"ETFD" %in% colNames && "ADAT" %in% colNames && "EDAT" %in% colNames) {
   df[,`:=`(ETFD = as.integer(as.Date(paste0(ADAT), "%Y%j") - as.Date(paste0(EDAT), "%Y%j")))]
 }
-if (!"FTHD" %in% colnames(df) && "ADAT" %in% colnames(df)) {
+if (!"FTHD" %in% colNames && "ADAT" %in% colNames) {
   df[,`:=`(FTHD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(ADAT), "%Y%j")))]
+}
+if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% variables) || 
+    !"ADMLV1" %in% colNames && "ADMLV1" %in% variables) {
+  
+  # Use GADM whole world shape file to query the country and region names
+  gadmShape <- shapefile("gadm_shapes\\gadm36_1.shp")
+  # proj4str <- CRS(proj4string(gadmShape))
+  proj4str <- CRS("+init=epsg:4326")
+  pixels <- df[,.N,by=.(LONGITUDE,LATITUDE)]
+  pixels[,N:=NULL]
+  pixelsSP <- SpatialPoints(pixels[,.(LONGITUDE,LATITUDE)],  proj4string=proj4str)
+  indices <- over(pixelsSP, gadmShape)
+  pixels[,`:=`(ADMLV0=indices$NAME_0,ADMLV1=indices$NAME_1)]
+  
+  # Fix the edge pixels which might be located on the sea caused by resolution
+  pixelsFixed <- pixels[is.na(ADMLV0)]
+  if (pixelsFixed[,.N] > 0) {
+    cat(paste0("Detect ", pixelsFixed[,.N], " pixels located on the sea, try to locate neareast land to get the names of countries and regions...\n"))
+    incr <- 0.05 # degree increment used for finding nearby location
+    maxRetry <- 5 # maximum retry 5 times for searching the land
+    for (i in 1 : pixelsFixed[,.N]) {
+      pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE)]
+      cat(paste0("[", i,"/",pixelsFixed[,.N],"] "))
+      cat(paste0("Resolve Long/Lat: ", paste(pixelsFixed[i,.(LONGITUDE,LATITUDE)], collapse = "  ") , " ..."))
+      for (cnt in 1 : maxRetry) {
+        diff <- incr * cnt
+        pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff))]
+        pixelsSPX <- SpatialPoints(pixelsX,  proj4string=proj4str)
+        indicesX <- over(pixelsSPX, gadmShape)
+        pixelsX[,`:=`(ADMLV0=indicesX$NAME_0,ADMLV1=indicesX$NAME_1)]
+        if (pixelsX[!is.na(ADMLV1), .N] > 0) {
+          pixelsXResult <- pixelsX[!is.na(ADMLV1),.(.N),by=.(ADMLV0,ADMLV1)][N==max(N)]
+          # pixelsFixed[i,`:=`(ADMLV0 = pixelsXResult[1,ADMLV0], ADMLV1 = pixelsXResult[1,ADMLV1])]
+          pixels[LATITUDE == pixelsFixed[i,LATITUDE] & LONGITUDE == pixelsFixed[i,LONGITUDE], `:=`(ADMLV0 = pixelsXResult[1,ADMLV0], ADMLV1 = pixelsXResult[1,ADMLV1])]
+          break
+        }
+      }
+      if (cnt > maxRetry) {
+        cat("failed")
+        cat("\n")
+      } else {
+        cat("\r")
+      }
+    }
+    cat("Done resolving                                                                                \n")
+  }
+  
+  # Fix incorrect country name for PRC
+  pixels[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
+  
+  # Create factor column for aggregations
+  if (!"ADMLV0" %in% colNames && "ADMLV0" %in% variables) {
+    df <- merge(df, pixels[,.(LATITUDE,LONGITUDE,ADMLV0)], by=c("LATITUDE","LONGITUDE"), all=T)
+  }
+  if (!"ADMLV1" %in% colNames && "ADMLV1" %in% variables) {
+    df <- merge(df, pixels[,.(LATITUDE,LONGITUDE,ADMLV1)], by=c("LATITUDE","LONGITUDE"), all=T)
+  }
+  
+  # Clear cache
+  gadmShape <- NULL
+  pixels <- NULL
+  pixelsSP <- NULL
+  indices <- NULL
 }
 
 # create report form
@@ -157,7 +222,7 @@ outlierReportZ <- data.table(LATITUDE=rnorm(0),
 
 # Validate requested variables
 for (variable in variables) {
-
+  
   # check if variable is available in the target file
   if (!variable %in% colnames(df)) {
     print(paste("Processing",  variable, ", which is missing and skipped"))
@@ -171,13 +236,16 @@ for (variable in variables) {
     header <- paste0(variable, "_ISO")
     df[, (header) := as.Date(paste0(get(variable)), "%Y%j")]
     invalid <- df[is.na(get(header)), .N]
+  } else if (variable %in% var_dic[unit == "text", name]) {
+    header <- variable
+    invalid <- df[is.na(get(header)) | get(header) == "" | get(header) == "-99", .N]
   } else {
     header <- variable
     invalid <- df[get(header) <= -99, .N]
   }
   
   # count records with valid/invalid values
-  if (variable %in% var_dic[unit %in% c("date", "degree_c"), name]) {
+  if (variable %in% var_dic[unit %in% c("date", "degree_c", "text"), name]) {
     row <- list(variable,
                 paste0(round(invalid/total*100, 2), "%"),
                 paste0(invalid, "/", total),"","")
@@ -189,92 +257,118 @@ for (variable in variables) {
                 paste0(round(zero/total*100, 2), "%"),
                 paste0(zero, "/", total))
   }
-  if (variable %in% var_dic[unit == "date", name]) {
-    valid_entries <- df[!is.na(get(header))]
-  } else if (argv$no_zero && !variable %in% var_dic[unit == "degree_c", name]) {
-    valid_entries <- df[get(header)> -99 & get(header) != 0]
+  if (variable %in% var_dic[unit == "text", name]) {
+    invalid_entries <- df[is.na(get(header)) | get(header) == "" | get(header) == "-99"]
+    if (argv$min) {
+      row <- c(row, "")
+    }
+    if (argv$max) {
+      row <- c(row, "")
+    }
+    if (argv$mean) {
+      row <- c(row, "")
+    }
+    if (argv$med) {
+      row <- c(row, "")
+    }
+    if (argv$std) {
+      row <- c(row, "")
+    }
+    row <- c(row, "", "")
+    if(!is.na(out_dir) && invalid_entries[,.N] > 0) {
+      invalid_entries <- invalid_entries[,.(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tmpvar=get(variable))]
+      setnames(invalid_entries, "tmpvar", variable)
+      data.table::fwrite(invalid_entries, file = file.path(out_dir, paste0(base_file_name, "_", variable, "_outlier_text.csv")))
+      drawMap(invalid_entries[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_text", variable)
+    }
+    
   } else {
-    valid_entries <- df[get(header)> -99]
-  }
-
-  # calculate min, max, mean, median and std
-  if (argv$min) {
-    row <- c(row, paste0(valid_entries[,min(get(header))]))
-  }
-  if (argv$max) {
-    row <- c(row, paste0(valid_entries[,max(get(header))]))
-  }
-  mean <- valid_entries[,mean(get(header))]
-  if (argv$mean) {
-    row <- c(row, paste0(mean))
-  }
-  if (argv$med) {
-    row <- c(row, paste0(valid_entries[,median(get(header))]))
-  }
-  std <- valid_entries[,sd(get(variable))]
-  if (argv$std) {
-    row <- c(row, paste0(std))
-  }
-
-  # Use min/max to detect outlier values
-  max <- var_dic[name==variable,max]
-  min <- var_dic[name==variable,min]
-  outlierReport <- valid_entries[get(header) > max | get(header) < min, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
-  outlierReport[, (variable) := tempvar]
-  outlierReport[, tempvar := NULL]
-  row <- c(row, paste0(outlierReport[,.N]))
-  if (outlierReport[,.N] > 0) {
-    if (outlierReportM[,.N] == 0) {
-      outlierReportM <- outlierReport
+    if (variable %in% var_dic[unit == "date", name]) {
+      valid_entries <- df[!is.na(get(header))]
+    } else if (argv$no_zero && !variable %in% var_dic[unit == "degree_c", name]) {
+      valid_entries <- df[get(header)> -99 & get(header) != 0]
     } else {
-      outlierReportM <- merge(outlierReportM, outlierReport, by=c("LATITUDE","LONGITUDE","PYEAR","HYEAR","RUN_NAME","CR"), all=T)
+      valid_entries <- df[get(header)> -99]
     }
-  }
-  if(!is.na(out_dir) && outlierReport[,.N] > 0) {
-    data.table::fwrite(outlierReport, file = file.path(out_dir, paste0(base_file_name, "_", variable, "_outlier_min_max.csv")))
-    if (!is.na(shpData)) {
-      mapPlotData <- valid_entries[get(header) < min, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
-      if(mapPlotData[,.N] > 0) {
-        drawMap(mapPlotData[,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_M", variable)
-        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_cnt_M", variable)
-      }
-      mapPlotData <- valid_entries[get(header) > max, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
-      if(mapPlotData[,.N] > 0) {
-        drawMap(mapPlotData[,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_M", variable)
-        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_cnt_M", variable)
-      }
+    
+    # calculate min, max, mean, median and std
+    if (argv$min) {
+      row <- c(row, paste0(valid_entries[,min(get(header))]))
     }
-  }
-
-  # Use Z-Score to detect outlier values
-  zscore <- argv$`z-score`
-  outlierReport <- valid_entries[abs((get(header)-mean)/std) > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
-  outlierReport[, (variable) := tempvar]
-  outlierReport[, tempvar := NULL]
-  row <- c(row, paste0(outlierReport[,.N]))
-  if (outlierReport[,.N] > 0) {
-    if (outlierReportZ[,.N] == 0) {
-      outlierReportZ <- outlierReport
-    } else {
-      outlierReportZ <- merge(outlierReportZ, outlierReport, by=c("LATITUDE","LONGITUDE","PYEAR","HYEAR","RUN_NAME","CR"), all=T)
+    if (argv$max) {
+      row <- c(row, paste0(valid_entries[,max(get(header))]))
     }
-  }
-  if(!is.na(out_dir) && outlierReport[,.N] > 0) {
-    data.table::fwrite(outlierReport, file = file.path(out_dir, paste0(base_file_name, "_", variable, "_outlier_z_score.csv")))
-    if (!is.na(shpData)) {
-      mapPlotData <- valid_entries[(mean-get(header))/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
-      if(mapPlotData[,.N] > 0) {
-        drawMap(mapPlotData[,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_Z", variable)
-        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_cnt_Z", variable)
-      }
-      mapPlotData <- valid_entries[(get(header)-mean)/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
-      if(mapPlotData[,.N] > 0) {
-        drawMap(mapPlotData[,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_Z", variable)
-        drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_cnt_Z", variable)
+    mean <- valid_entries[,mean(get(header))]
+    if (argv$mean) {
+      row <- c(row, paste0(mean))
+    }
+    if (argv$med) {
+      row <- c(row, paste0(valid_entries[,median(get(header))]))
+    }
+    std <- valid_entries[,sd(get(variable))]
+    if (argv$std) {
+      row <- c(row, paste0(std))
+    }
+    
+    # Use min/max to detect outlier values
+    max <- var_dic[name==variable,max]
+    min <- var_dic[name==variable,min]
+    outlierReport <- valid_entries[get(header) > max | get(header) < min, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+    outlierReport[, (variable) := tempvar]
+    outlierReport[, tempvar := NULL]
+    row <- c(row, paste0(outlierReport[,.N]))
+    if (outlierReport[,.N] > 0) {
+      if (outlierReportM[,.N] == 0) {
+        outlierReportM <- outlierReport
+      } else {
+        outlierReportM <- merge(outlierReportM, outlierReport, by=c("LATITUDE","LONGITUDE","PYEAR","HYEAR","RUN_NAME","CR"), all=T)
       }
     }
+    if(!is.na(out_dir) && outlierReport[,.N] > 0) {
+      data.table::fwrite(outlierReport, file = file.path(out_dir, paste0(base_file_name, "_", variable, "_outlier_min_max.csv")))
+      if (!is.na(shpData)) {
+        mapPlotData <- valid_entries[get(header) < min, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+        if(mapPlotData[,.N] > 0) {
+          drawMap(mapPlotData[,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_M", variable)
+          drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_cnt_M", variable)
+        }
+        mapPlotData <- valid_entries[get(header) > max, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+        if(mapPlotData[,.N] > 0) {
+          drawMap(mapPlotData[,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_M", variable)
+          drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_cnt_M", variable)
+        }
+      }
+    }
+    
+    # Use Z-Score to detect outlier values
+    zscore <- argv$`z-score`
+    outlierReport <- valid_entries[abs((get(header)-mean)/std) > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+    outlierReport[, (variable) := tempvar]
+    outlierReport[, tempvar := NULL]
+    row <- c(row, paste0(outlierReport[,.N]))
+    if (outlierReport[,.N] > 0) {
+      if (outlierReportZ[,.N] == 0) {
+        outlierReportZ <- outlierReport
+      } else {
+        outlierReportZ <- merge(outlierReportZ, outlierReport, by=c("LATITUDE","LONGITUDE","PYEAR","HYEAR","RUN_NAME","CR"), all=T)
+      }
+    }
+    if(!is.na(out_dir) && outlierReport[,.N] > 0) {
+      data.table::fwrite(outlierReport, file = file.path(out_dir, paste0(base_file_name, "_", variable, "_outlier_z_score.csv")))
+      if (!is.na(shpData)) {
+        mapPlotData <- valid_entries[(mean-get(header))/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+        if(mapPlotData[,.N] > 0) {
+          drawMap(mapPlotData[,min(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_Z", variable)
+          drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_min_cnt_Z", variable)
+        }
+        mapPlotData <- valid_entries[(get(header)-mean)/std > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+        if(mapPlotData[,.N] > 0) {
+          drawMap(mapPlotData[,max(tempvar),by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_Z", variable)
+          drawMap(mapPlotData[,.N,by=.(LATITUDE, LONGITUDE)], shpData, "outlier_max_cnt_Z", variable)
+        }
+      }
+    }
   }
-  
   report <- rbind(report, row)
 }
 print(report)

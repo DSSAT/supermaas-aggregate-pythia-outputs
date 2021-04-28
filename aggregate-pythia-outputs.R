@@ -1,6 +1,7 @@
 #library(here)
 library(argparser)
 library(data.table)
+library(raster)
 
 setwd(".")
 
@@ -37,6 +38,9 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "GSD", "ETFD", "FTHD", "HIAM", "-f", "LATITUDE", "LONGITUDE"))
 # argv <- argparser::parse_args(p, c("test\\data\\case6\\pp_GGCMI_Maize_ir.csv", "test\\output\\report6.csv", "-a", "PRCP", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2.csv", "-a", "PRCP", "HWAH", "-f","LONGITUDE", "LATITUDE"))
+# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
+# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1"))
+# argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -81,30 +85,101 @@ for(f in flist) {
 df <- data.table::rbindlist(dts)
 valid_entries <- df[
   !is.na(as.Date(paste0(EDAT), "%Y%j")) &
-  !is.na(as.Date(paste0(MDAT), "%Y%j")) &
-  !is.na(as.Date(paste0(ADAT), "%Y%j")) &
-  !is.na(as.Date(paste0(HDAT), "%Y%j")) &
-  HWAH >= 0
+    !is.na(as.Date(paste0(MDAT), "%Y%j")) &
+    !is.na(as.Date(paste0(ADAT), "%Y%j")) &
+    !is.na(as.Date(paste0(HDAT), "%Y%j")) &
+    HWAH >= 0
 ]
-if (!"HYEAR" %in% colnames(valid_entries)) {
+
+colNames <- colnames(valid_entries)
+if (!"HYEAR" %in% colNames) {
   valid_entries[,`:=`(HYEAR = trunc(HDAT/1000))]
 }
-if (!"PYEAR" %in% colnames(valid_entries)) {
+if (!"PYEAR" %in% colNames) {
   valid_entries[,`:=`(PYEAR = trunc(PDAT/1000))]
 }
-if (!"GSD" %in% colnames(valid_entries)) {
+if (!"GSD" %in% colNames) {
   valid_entries[,`:=`(GSD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PDAT), "%Y%j")))]
 }
-if (!"ETFD" %in% colnames(valid_entries) && "ADAT" %in% colnames(valid_entries) && "EDAT" %in% colnames(valid_entries)) {
+if (!"ETFD" %in% colNames && "ADAT" %in% colNames && "EDAT" %in% colNames) {
   valid_entries[,`:=`(ETFD = as.integer(as.Date(paste0(ADAT), "%Y%j") - as.Date(paste0(EDAT), "%Y%j")))]
 }
-if (!"FTHD" %in% colnames(valid_entries) && "ADAT" %in% colnames(valid_entries)) {
+if (!"FTHD" %in% colNames && "ADAT" %in% colNames) {
   valid_entries[,`:=`(FTHD = as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(ADAT), "%Y%j")))]
+}
+if (!"HARVEST_AREA" %in% colNames) {
+  valid_entries[,`:=`(HARVEST_AREA = 1)]
+}
+
+if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) || 
+    !"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
+  
+  # Use GADM whole world shape file to query the country and region names
+  gadmShape <- shapefile("gadm_shapes\\gadm36_1.shp")
+
+  # proj4str <- CRS(proj4string(gadmShape))
+  proj4str <- CRS("+init=epsg:4326")
+  pixels <- valid_entries[,.N,by=.(LONGITUDE,LATITUDE)]
+  pixels[,N:=NULL]
+  pixelsSP <- SpatialPoints(pixels[,.(LONGITUDE,LATITUDE)],  proj4string=proj4str)
+  # gridded(pixelsSP) = TRUE
+  indices <- over(pixelsSP, gadmShape)
+  pixels[,`:=`(ADMLV0=indices$NAME_0,ADMLV1=indices$NAME_1)]
+  
+  # Fix the edge pixels which might be located on the sea caused by resolution
+  pixelsFixed <- pixels[is.na(ADMLV0)]
+  if (pixelsFixed[,.N] > 0) {
+    cat(paste0("Detect ", pixelsFixed[,.N], " pixels located on the sea, try to locate neareast land to get the names of countries and regions...\n"))
+    incr <- 0.05 # degree increment used for finding nearby location
+    maxRetry <- 5 # maximum retry 5 times for searching the land
+    for (i in 1 : pixelsFixed[,.N]) {
+      pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE)]
+      cat(paste0("[", i,"/",pixelsFixed[,.N],"] "))
+      cat(paste0("Resolve Long/Lat: ", paste(pixelsFixed[i,.(LONGITUDE,LATITUDE)], collapse = "  ") , " ..."))
+      for (cnt in 1 : maxRetry) {
+        diff <- incr * cnt
+        pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff))]
+        pixelsSPX <- SpatialPoints(pixelsX,  proj4string=proj4str)
+        indicesX <- over(pixelsSPX, gadmShape)
+        pixelsX[,`:=`(ADMLV0=indicesX$NAME_0,ADMLV1=indicesX$NAME_1)]
+        if (pixelsX[!is.na(ADMLV1), .N] > 0) {
+          pixelsXResult <- pixelsX[!is.na(ADMLV1),.(.N),by=.(ADMLV0,ADMLV1)][N==max(N)]
+          # pixelsFixed[i,`:=`(ADMLV0 = pixelsXResult[1,ADMLV0], ADMLV1 = pixelsXResult[1,ADMLV1])]
+          pixels[LATITUDE == pixelsFixed[i,LATITUDE] & LONGITUDE == pixelsFixed[i,LONGITUDE], `:=`(ADMLV0 = pixelsXResult[1,ADMLV0], ADMLV1 = pixelsXResult[1,ADMLV1])]
+          break
+        }
+      }
+      if (cnt > maxRetry) {
+        cat("failed")
+        cat("\n")
+      } else {
+        cat("\r")
+      }
+    }
+    cat("Done resolving                                                                                \n")
+  }
+  
+  # Fix incorrect country name for PRC
+  pixels[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
+
+  # Create factor column for aggregations
+  if (!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) {
+    valid_entries <- merge(valid_entries, pixels[,.(LATITUDE,LONGITUDE,ADMLV0)], by=c("LATITUDE","LONGITUDE"), all=T)
+  }
+  if (!"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
+    valid_entries <- merge(valid_entries, pixels[,.(LATITUDE,LONGITUDE,ADMLV1)], by=c("LATITUDE","LONGITUDE"), all=T)
+  }
+  
+  # Clear cache
+  gadmShape <- NULL
+  pixels <- NULL
+  pixelsSP <- NULL
+  indices <- NULL
 }
 
 print("Starting aggregation.")
 # if (argv$period_annual) {
-  # print("Processing annual calculation.")
+# print("Processing annual calculation.")
 calc_production <- valid_entries
 calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
 aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
