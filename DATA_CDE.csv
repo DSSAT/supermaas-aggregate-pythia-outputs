@@ -2,6 +2,8 @@ name,unit,min,max,factor,total,average,total_ton,timeline
 LATITUDE,degree,-90,90,lat,,,,
 LONGITUDE,degree,-180,180,lng,,,,
 HARVEST_AREA,ha,0,,,,,,
+ADMLV0,text,,,country,,,,
+ADMLV1,text,,,region,,,,
 PYEAR,year,,,,,,,
 HYEAR,year,,,year,,,,
 GSD,day,49,269,,,GSD_AVE,,
