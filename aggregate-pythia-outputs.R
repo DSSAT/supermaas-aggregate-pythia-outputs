@@ -128,35 +128,33 @@ if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) ||
   
   # Fix the edge pixels which might be located on the sea caused by resolution
   pixelsFixed <- pixels[is.na(ADMLV0)]
-  if (pixelsFixed[,.N] > 0) {
-    cat(paste0("Detect ", pixelsFixed[,.N], " pixels located on the sea, try to locate neareast land to get the names of countries and regions...\n"))
-    incr <- 0.05 # degree increment used for finding nearby location
-    maxRetry <- 5 # maximum retry 5 times for searching the land
+  incr <- 0.05 # degree increment used for finding nearby location
+  maxRetry <- 5 # maximum retry 5 times for searching the land
+  cnt <- 1
+  while (pixelsFixed[,.N] > 0 && cnt <= maxRetry) {
+    diff <- incr * cnt
+    cnt <- cnt + 1
+    pixelsFixed[,`:=`(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE)]
+    pixelsXs <- NULL
     for (i in 1 : pixelsFixed[,.N]) {
-      pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE)]
-      cat(paste0("[", i,"/",pixelsFixed[,.N],"] "))
-      cat(paste0("Resolve Long/Lat: ", paste(pixelsFixed[i,.(LONGITUDE,LATITUDE)], collapse = "  ") , " ..."))
-      for (cnt in 1 : maxRetry) {
-        diff <- incr * cnt
-        pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff))]
-        pixelsSPX <- SpatialPoints(pixelsX,  proj4string=proj4str)
-        indicesX <- over(pixelsSPX, gadmShape)
-        pixelsX[,`:=`(ADMLV0=indicesX$NAME_0,ADMLV1=indicesX$NAME_1)]
-        if (pixelsX[!is.na(ADMLV1), .N] > 0) {
-          pixelsXResult <- pixelsX[!is.na(ADMLV1),.(.N),by=.(ADMLV0,ADMLV1)][N==max(N)]
-          # pixelsFixed[i,`:=`(ADMLV0 = pixelsXResult[1,ADMLV0], ADMLV1 = pixelsXResult[1,ADMLV1])]
-          pixels[LATITUDE == pixelsFixed[i,LATITUDE] & LONGITUDE == pixelsFixed[i,LONGITUDE], `:=`(ADMLV0 = pixelsXResult[1,ADMLV0], ADMLV1 = pixelsXResult[1,ADMLV1])]
-          break
-        }
-      }
-      if (cnt > maxRetry) {
-        cat("failed")
-        cat("\n")
+      pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE,LONGITUDE_ORG,LATITUDE_ORG)]
+      
+      pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff), LONGITUDE_ORG = LONGITUDE_ORG, LATITUDE_ORG = LATITUDE_ORG  )]
+      if (is.null(pixelsXs)) {
+        pixelsXs <- pixelsX
       } else {
-        cat("\r")
+        pixelsXs <- rbind(pixelsXs, pixelsX)
       }
     }
-    cat("Done resolving                                                                                \n")
+    pixelsSPXs <- SpatialPoints(pixelsXs,  proj4string=proj4str)
+    indicesXs <- over(pixelsSPXs, gadmShape)
+    pixelsXs[,`:=`(ADMLV0=indicesXs$NAME_0,ADMLV1=indicesXs$NAME_1)]
+    if (pixelsXs[!is.na(ADMLV1), .N] > 0) {
+      pixelsXsResult <- pixelsXs[!is.na(ADMLV1),.(.N, maxN=max(.N)),by=.(ADMLV0,ADMLV1,LONGITUDE_ORG,LATITUDE_ORG)][N==maxN]
+      pixelsXsResult <- unique(pixelsXsResult, by=c("LONGITUDE_ORG", "LATITUDE_ORG"))
+      pixels[paste0(LONGITUDE, "_", LATITUDE) %in% pixelsXsResult[,paste0(LONGITUDE_ORG, "_", LATITUDE_ORG)], `:=`(ADMLV0 = pixelsXsResult[,ADMLV0], ADMLV1 = pixelsXsResult[,ADMLV1])]
+      pixelsFixed <- pixels[is.na(ADMLV1)]
+    }
   }
   
   # Fix incorrect country name for PRC
