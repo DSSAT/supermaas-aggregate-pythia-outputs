@@ -103,7 +103,7 @@ flist <- list()
 dts <- list()
 print("Loading files for validation")
 if (!dir.exists(in_dir)) {
-  flist[1] = in_dir
+  flist <- in_dir
 } else {
   flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
 }
