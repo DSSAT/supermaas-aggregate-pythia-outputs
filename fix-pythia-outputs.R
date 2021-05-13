@@ -14,6 +14,44 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
+resolveGeoPortion <- function (gadmShape, pixels, longDiff, latDiff, gridNum) {
+  # gridNum <- 1
+  if (gridNum > 1) {
+    latIncr <- latDiff / gridNum
+    longIncr <- longDiff / gridNum
+    pixelDiffs <- data.table(LONGITUDE_Diff=rnorm(0), LATITUDE_Diff=rnorm(0))
+    longArr <- seq(-longDiff/2 + longIncr/2, longDiff/2 - longIncr/2, by=longIncr)
+    latArr <- seq(-latDiff/2 + latIncr/2, latDiff/2 - latIncr/2, by=latIncr)
+    for (x in 1 : length(latArr)) {
+      for (y in 1 : length(longArr)) {
+        pixelDiffs <- rbind(pixelDiffs, list(longArr[y], latArr[x]))
+      }
+    }
+    pixelsXs <- pixels[,.SD[,.(LONGITUDE=LONGITUDE+pixelDiffs[,LONGITUDE_Diff],LATITUDE=LATITUDE+pixelDiffs[,LATITUDE_Diff])], by=.(LONGITUDE_ORG, LATITUDE_ORG)]
+  } else {
+    pixelsXs <- pixels
+  }
+  pixelsSP <- SpatialPoints(pixelsXs[,.(LONGITUDE,LATITUDE)],  proj4string=proj4str)
+  
+  # calculate the admin level info
+  indices <- over(pixelsSP, gadmShape)
+  pixelsXs[,`:=`(ADMLV0=indices$NAME_0,ADMLV1=indices$NAME_1)]
+  # Fix incorrect country name for PRC
+  pixelsXs[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
+  
+  # pixelsXs2 <- pixelsXs[,.SD[!is.na(ADMLV1),.N], by=.(LONGITUDE_ORG, LATITUDE_ORG)]
+  # pixelsXs2[V1>1]
+  pixelsXs <- pixelsXs[,.SD[!is.na(ADMLV1), .(ADMLV0, ADMLV1, total=.N)], by=.(LONGITUDE_ORG, LATITUDE_ORG)]
+  pixelsXs <- pixelsXs[,.(portion=.N/mean(total)),by=.(LONGITUDE_ORG, LATITUDE_ORG, ADMLV0, ADMLV1)]
+  setnames(pixelsXs, "LONGITUDE_ORG", "LONGITUDE")
+  setnames(pixelsXs, "LATITUDE_ORG", "LATITUDE")
+  # pixelsXs[portion < 1,.(ADMLV0, ADMLV1), by=.(LONGITUDE,LATITUDE)]
+  # pixelsXs[is.na(portion),.(ADMLV0, ADMLV1), by=.(LONGITUDE,LATITUDE)]
+  pixels <- merge(pixels, pixelsXs, by=c("LONGITUDE", "LATITUDE"), all=T)
+  pixels[is.na(portion)]
+  return (pixels)
+}
+
 p <- argparser::arg_parser("Pre-calculate the extra variable/columns on Pythia outputs in order to do the following validation and aggregation for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
 p <- argparser::add_argument(p, "--keep_original", short="-o", flag = TRUE, help=paste0("Keep Overwrite the original file. If missing, will use 'modified_' as the prefix for the file name"))
@@ -103,54 +141,62 @@ for(f in flist) {
     
     # proj4str <- CRS(proj4string(gadmShape))
     proj4str <- CRS("+init=epsg:4326")
-    pixels <- valid_entries[,.N,by=.(LONGITUDE,LATITUDE)]
-    pixels[,N:=NULL]
-    pixelsSP <- SpatialPoints(pixels[,.(LONGITUDE,LATITUDE)],  proj4string=proj4str)
-    # gridded(pixelsSP) = TRUE
-    indices <- over(pixelsSP, gadmShape)
-    pixels[,`:=`(ADMLV0=indices$NAME_0,ADMLV1=indices$NAME_1)]
+    # pixels <- valid_entries[,.N,by=.(LONGITUDE,LATITUDE)]
+    # pixels[,N:=NULL]
+    
+    # prepare the pixles for calculating the admin level info
+    pixels <- valid_entries[,.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)]
+    latDiff <- pixels[LONGITUDE==pixels[1,LONGITUDE]][order(LATITUDE)][,.(diff = diff(LATITUDE))][,.N, by=diff][N==max(N), diff]
+    longDiff <- pixels[LATITUDE==pixels[1,LATITUDE]][order(LONGITUDE)][,.(diff = diff(LONGITUDE))][,.N, by=diff][N==max(N), diff]
+    gridNum <- 1
+    pixels <- resolveGeoPortion(gadmShape, pixels, longDiff, latDiff, gridNum)
+    # pixels <- resolveGeoPortion(gadmShape, valid_entries[,.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)], longDiff, latDiff, 1)
     
     # Fix the edge pixels which might be located on the sea caused by resolution
-    pixelsFixed <- pixels[is.na(ADMLV1)]
-    incr <- 0.05 # degree increment used for finding nearby location
     maxRetry <- 5 # maximum retry 5 times for searching the land
     cnt <- 1
-    while (pixelsFixed[,.N] > 0 && cnt <= maxRetry) {
-      diff <- incr * cnt
+    while (pixels[is.na(ADMLV1), .N] > 0 && cnt <= maxRetry) {
+      pixelsFixed <- resolveGeoPortion(gadmShape, pixels[is.na(ADMLV1),.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)], longDiff, latDiff, gridNum + cnt)
+      pixels <- rbind(pixels[!is.na(ADMLV1)], pixelsFixed)
       cnt <- cnt + 1
-      pixelsFixed[,`:=`(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE)]
-      pixelsXs <- NULL
-      for (i in 1 : pixelsFixed[,.N]) {
-        pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE,LONGITUDE_ORG,LATITUDE_ORG)]
-        
-        pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff), LONGITUDE_ORG = LONGITUDE_ORG, LATITUDE_ORG = LATITUDE_ORG  )]
-        if (is.null(pixelsXs)) {
-          pixelsXs <- pixelsX
-        } else {
-          pixelsXs <- rbind(pixelsXs, pixelsX)
-        }
-      }
-      pixelsSPXs <- SpatialPoints(pixelsXs,  proj4string=proj4str)
-      indicesXs <- over(pixelsSPXs, gadmShape)
-      pixelsXs[,`:=`(ADMLV0=indicesXs$NAME_0,ADMLV1=indicesXs$NAME_1)]
-      if (pixelsXs[!is.na(ADMLV1), .N] > 0) {
-        pixelsXsResult <- pixelsXs[!is.na(ADMLV1),.(.N, maxN=max(.N)),by=.(ADMLV0,ADMLV1,LONGITUDE_ORG,LATITUDE_ORG)][N==maxN]
-        pixelsXsResult <- unique(pixelsXsResult, by=c("LONGITUDE_ORG", "LATITUDE_ORG"))
-        pixels[paste0(LONGITUDE, "_", LATITUDE) %in% pixelsXsResult[,paste0(LONGITUDE_ORG, "_", LATITUDE_ORG)], `:=`(ADMLV0 = pixelsXsResult[,ADMLV0], ADMLV1 = pixelsXsResult[,ADMLV1])]
-        pixelsFixed <- pixels[is.na(ADMLV1)]
-      }
     }
-  
-    # Fix incorrect country name for PRC
-    pixels[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
+    # pixels[portion < 1, .N]
+    
+    # pixelsFixed <- pixels[is.na(ADMLV1),.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)]
+    # incr <- 0.05 # degree increment used for finding nearby location
+    # 
+    # cnt <- 1
+    # while (pixelsFixed[,.N] > 0 && cnt <= maxRetry) {
+    #   diff <- incr * cnt
+    #   cnt <- cnt + 1
+    #   # pixelsFixed[,`:=`(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE)]
+    #   pixelsXs <- NULL
+    #   for (i in 1 : pixelsFixed[,.N]) {
+    #     pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE,LONGITUDE_ORG,LATITUDE_ORG)]
+    #     
+    #     pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff), LONGITUDE_ORG = LONGITUDE_ORG, LATITUDE_ORG = LATITUDE_ORG  )]
+    #     if (is.null(pixelsXs)) {
+    #       pixelsXs <- pixelsX
+    #     } else {
+    #       pixelsXs <- rbind(pixelsXs, pixelsX)
+    #     }
+    #   }
+    #   pixelsSPXs <- SpatialPoints(pixelsXs,  proj4string=proj4str)
+    #   indicesXs <- over(pixelsSPXs, gadmShape)
+    #   pixelsXs[,`:=`(ADMLV0=indicesXs$NAME_0,ADMLV1=indicesXs$NAME_1)]
+    #   if (pixelsXs[!is.na(ADMLV1), .N] > 0) {
+    #     pixelsXsResult <- pixelsXs[!is.na(ADMLV1),.(.N, maxN=max(.N)),by=.(ADMLV0,ADMLV1,LONGITUDE_ORG,LATITUDE_ORG)][N==maxN]
+    #     pixelsXsResult <- unique(pixelsXsResult, by=c("LONGITUDE_ORG", "LATITUDE_ORG"))
+    #     pixels[paste0(LONGITUDE, "_", LATITUDE) %in% pixelsXsResult[,paste0(LONGITUDE_ORG, "_", LATITUDE_ORG)], `:=`(ADMLV0 = pixelsXsResult[,ADMLV0], ADMLV1 = pixelsXsResult[,ADMLV1])]
+    #     pixelsFixed <- pixels[is.na(ADMLV1)]
+    #   }
+    # }
+    # 
+    # # Fix incorrect country name for PRC
+    # pixels[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
     
     # Create factor column for aggregations
-    if (!"ADMLV0" %in% colNames) {
-      valid_entries <- merge(valid_entries, pixels[,.(LATITUDE,LONGITUDE,ADMLV0)], by=c("LATITUDE","LONGITUDE"), all=T)
-    }
-    if (!"ADMLV1" %in% colNames) {
-      valid_entries <- merge(valid_entries, pixels[,.(LATITUDE,LONGITUDE,ADMLV1)], by=c("LATITUDE","LONGITUDE"), all=T)
-    }
+    valid_entries <- merge(pixels[,.(LATITUDE,LONGITUDE,ADMLV0,ADMLV1,ADMLVP=portion)], valid_entries, by=c("LATITUDE","LONGITUDE"), all=T, allow.cartesian=TRUE, allow.by=.EACHI)
     
     # Clear cache
     gadmShape <- NULL
