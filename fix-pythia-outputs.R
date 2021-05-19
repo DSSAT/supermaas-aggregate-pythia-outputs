@@ -38,17 +38,12 @@ resolveGeoPortion <- function (gadmShape, pixels, longDiff, latDiff, gridNum) {
   pixelsXs[,`:=`(ADMLV0=indices$NAME_0,ADMLV1=indices$NAME_1)]
   # Fix incorrect country name for PRC
   pixelsXs[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
-  
-  # pixelsXs2 <- pixelsXs[,.SD[!is.na(ADMLV1),.N], by=.(LONGITUDE_ORG, LATITUDE_ORG)]
-  # pixelsXs2[V1>1]
+  # reorganize data
   pixelsXs <- pixelsXs[,.SD[!is.na(ADMLV1), .(ADMLV0, ADMLV1, total=.N)], by=.(LONGITUDE_ORG, LATITUDE_ORG)]
   pixelsXs <- pixelsXs[,.(portion=.N/mean(total)),by=.(LONGITUDE_ORG, LATITUDE_ORG, ADMLV0, ADMLV1)]
   setnames(pixelsXs, "LONGITUDE_ORG", "LONGITUDE")
   setnames(pixelsXs, "LATITUDE_ORG", "LATITUDE")
-  # pixelsXs[portion < 1,.(ADMLV0, ADMLV1), by=.(LONGITUDE,LATITUDE)]
-  # pixelsXs[is.na(portion),.(ADMLV0, ADMLV1), by=.(LONGITUDE,LATITUDE)]
   pixels <- merge(pixels, pixelsXs, by=c("LONGITUDE", "LATITUDE"), all=T)
-  pixels[is.na(portion)]
   return (pixels)
 }
 
@@ -56,18 +51,22 @@ p <- argparser::arg_parser("Pre-calculate the extra variable/columns on Pythia o
 p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
 p <- argparser::add_argument(p, "--keep_original", short="-o", flag = TRUE, help=paste0("Keep Overwrite the original file. If missing, will use 'modified_' as the prefix for the file name"))
 p <- argparser::add_argument(p, "--skip_admlvl", short="-a", flag = TRUE, help=paste0("Skip the calculation for admin level"))
+p <- argparser::add_argument(p, "--grid_num", short="-g", default = 5, help=paste0("Provide the number to divide current pixel into smaller grid to calculate the portion of admin level, and provide 1 to skip the calculation"))
 argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case1", "-o", "test\\data\\case1", "-a"))
-# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "-o"))
-# argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
+# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "-o", "-g", "6"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
 isKeepOriginal <- argv$keep_original
 isSkipAdmlvl <- argv$skip_admlvl
-variables <- argv$variables
+gridNum <- argv$grid_num
+
+if (gridNum < 0) {
+  gridNum <- 1
+}
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
@@ -141,16 +140,12 @@ for(f in flist) {
     
     # proj4str <- CRS(proj4string(gadmShape))
     proj4str <- CRS("+init=epsg:4326")
-    # pixels <- valid_entries[,.N,by=.(LONGITUDE,LATITUDE)]
-    # pixels[,N:=NULL]
     
     # prepare the pixles for calculating the admin level info
     pixels <- valid_entries[,.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)]
     latDiff <- pixels[LONGITUDE==pixels[1,LONGITUDE]][order(LATITUDE)][,.(diff = diff(LATITUDE))][,.N, by=diff][N==max(N), diff]
     longDiff <- pixels[LATITUDE==pixels[1,LATITUDE]][order(LONGITUDE)][,.(diff = diff(LONGITUDE))][,.N, by=diff][N==max(N), diff]
-    gridNum <- 1
     pixels <- resolveGeoPortion(gadmShape, pixels, longDiff, latDiff, gridNum)
-    # pixels <- resolveGeoPortion(gadmShape, valid_entries[,.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)], longDiff, latDiff, 1)
     
     # Fix the edge pixels which might be located on the sea caused by resolution
     maxRetry <- 5 # maximum retry 5 times for searching the land
@@ -160,40 +155,6 @@ for(f in flist) {
       pixels <- rbind(pixels[!is.na(ADMLV1)], pixelsFixed)
       cnt <- cnt + 1
     }
-    # pixels[portion < 1, .N]
-    
-    # pixelsFixed <- pixels[is.na(ADMLV1),.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)]
-    # incr <- 0.05 # degree increment used for finding nearby location
-    # 
-    # cnt <- 1
-    # while (pixelsFixed[,.N] > 0 && cnt <= maxRetry) {
-    #   diff <- incr * cnt
-    #   cnt <- cnt + 1
-    #   # pixelsFixed[,`:=`(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE)]
-    #   pixelsXs <- NULL
-    #   for (i in 1 : pixelsFixed[,.N]) {
-    #     pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE,LONGITUDE_ORG,LATITUDE_ORG)]
-    #     
-    #     pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff), LONGITUDE_ORG = LONGITUDE_ORG, LATITUDE_ORG = LATITUDE_ORG  )]
-    #     if (is.null(pixelsXs)) {
-    #       pixelsXs <- pixelsX
-    #     } else {
-    #       pixelsXs <- rbind(pixelsXs, pixelsX)
-    #     }
-    #   }
-    #   pixelsSPXs <- SpatialPoints(pixelsXs,  proj4string=proj4str)
-    #   indicesXs <- over(pixelsSPXs, gadmShape)
-    #   pixelsXs[,`:=`(ADMLV0=indicesXs$NAME_0,ADMLV1=indicesXs$NAME_1)]
-    #   if (pixelsXs[!is.na(ADMLV1), .N] > 0) {
-    #     pixelsXsResult <- pixelsXs[!is.na(ADMLV1),.(.N, maxN=max(.N)),by=.(ADMLV0,ADMLV1,LONGITUDE_ORG,LATITUDE_ORG)][N==maxN]
-    #     pixelsXsResult <- unique(pixelsXsResult, by=c("LONGITUDE_ORG", "LATITUDE_ORG"))
-    #     pixels[paste0(LONGITUDE, "_", LATITUDE) %in% pixelsXsResult[,paste0(LONGITUDE_ORG, "_", LATITUDE_ORG)], `:=`(ADMLV0 = pixelsXsResult[,ADMLV0], ADMLV1 = pixelsXsResult[,ADMLV1])]
-    #     pixelsFixed <- pixels[is.na(ADMLV1)]
-    #   }
-    # }
-    # 
-    # # Fix incorrect country name for PRC
-    # pixels[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
     
     # Create factor column for aggregations
     valid_entries <- merge(pixels[,.(LATITUDE,LONGITUDE,ADMLV0,ADMLV1,ADMLVP=portion)], valid_entries, by=c("LATITUDE","LONGITUDE"), all=T, allow.cartesian=TRUE, allow.by=.EACHI)
