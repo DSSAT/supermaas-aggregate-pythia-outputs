@@ -57,6 +57,7 @@ argv <- argparser::parse_args(p)
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case1", "-o", "test\\data\\case1", "-a"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "-o", "-g", "6"))
+# argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg", "-o", "-g", "6"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -91,7 +92,7 @@ if (!dir.exists(in_dir)) {
   class(flist)
 }
 for(f in flist) {
-  cat(paste0("Processing ", f))
+  cat(paste0("Processing ", f, "\n"))
   valid_entries <- data.table::fread(f)
   
   if (isKeepOriginal) {
@@ -143,8 +144,9 @@ for(f in flist) {
     
     # prepare the pixles for calculating the admin level info
     pixels <- valid_entries[,.(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE),by=.(LONGITUDE,LATITUDE)]
-    latDiff <- pixels[LONGITUDE==pixels[1,LONGITUDE]][order(LATITUDE)][,.(diff = diff(LATITUDE))][,.N, by=diff][N==max(N), diff]
-    longDiff <- pixels[LATITUDE==pixels[1,LATITUDE]][order(LONGITUDE)][,.(diff = diff(LONGITUDE))][,.N, by=diff][N==max(N), diff]
+    
+    latDiff <- pixels[,.SD[order(LATITUDE)][,.(diff = diff(LATITUDE))], by=LONGITUDE][,.N, by=diff][N==max(N), diff][1]
+    longDiff <- pixels[,.SD[order(LONGITUDE)][,.(diff = diff(LONGITUDE))], by=LATITUDE][,.N, by=diff][N==max(N), diff][1]
     pixels <- resolveGeoPortion(gadmShape, pixels, longDiff, latDiff, gridNum)
     
     # Fix the edge pixels which might be located on the sea caused by resolution
