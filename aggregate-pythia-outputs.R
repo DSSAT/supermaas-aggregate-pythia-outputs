@@ -41,6 +41,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1"))
 # argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
+# argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0.csv", "test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1", "HYEAR"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -174,11 +175,19 @@ if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) ||
   pixelsSP <- NULL
   indices <- NULL
 }
+if (!"ADMLVP" %in% colNames) {
+  valid_entries[,`:=`(ADMLVP = 1)]
+}
+if ("ADMLV1" %in% factors && !"ADMLV0" %in% factors) {
+  factors <- c(factors, "ADMLV0")
+}
 
 print("Starting aggregation.")
 # if (argv$period_annual) {
 # print("Processing annual calculation.")
 calc_production <- valid_entries
+# calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA*ADMLVP)), by = factors]
+# aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA*ADMLVP)),by = factors]
 calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
 aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
 final <- aggregated[, ..factors]
