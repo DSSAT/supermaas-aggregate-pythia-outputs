@@ -25,6 +25,7 @@ p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("V
 p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for summary aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "]"))
+p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
 # p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -116,7 +117,7 @@ if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) ||
     !"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
   
   # Use GADM whole world shape file to query the country and region names
-  gadmShape <- shapefile("gadm_shapes\\gadm36_1.shp")
+  gadmShape <- shapefile(file.path(args$gadm_path, "gadm36_1.shp"))
 
   # proj4str <- CRS(proj4string(gadmShape))
   proj4str <- CRS("+init=epsg:4326")
