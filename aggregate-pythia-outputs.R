@@ -205,7 +205,7 @@ suppressWarnings(if (!is.na(variables)) {
       print(paste("Processing",  variable))
       if (variable == "TIMESTAMP") {
         if ("year" %in% var_dic[name %in% factors, unit]) {
-          aggregated[,(variable):= calc_production[,mean.Date(HYEAR),by = factors][,V1]]
+          aggregated[,(variable):= calc_production[,mean.Date(as.Date(paste0(HDAT), "%Y%j")),by = factors][,V1]]
         } else {
           aggregated[,(variable):= calc_production[,format(as.Date("1970-01-01") + mean(as.integer(as.Date(paste0(HDAT), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d"),by = factors][,V1]]
         }
