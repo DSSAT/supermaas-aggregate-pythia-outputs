@@ -14,7 +14,7 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
-predefined_vars <- c("PRODUCTION", "TIMESTAMP","")
+predefined_vars <- c("PRODUCTION", "TIMESTAMP")
 default_factors <- c("LATITUDE", "LONGITUDE", "HYEAR")
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
@@ -117,7 +117,7 @@ if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) ||
     !"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
   
   # Use GADM whole world shape file to query the country and region names
-  gadmShape <- shapefile(file.path(args$gadm_path, "gadm36_1.shp"))
+  gadmShape <- shapefile(file.path(argv$gadm_path, "gadm36_1.shp"))
 
   # proj4str <- CRS(proj4string(gadmShape))
   proj4str <- CRS("+init=epsg:4326")
