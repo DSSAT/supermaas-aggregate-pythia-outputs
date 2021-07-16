@@ -222,5 +222,9 @@ if (factor == "file" || factor == "pixel") {
   data.table::fwrite(factorlist, file = file.path(out_dir, paste0(base_file_name, "_", factor, "_list.csv")))
 }
 
+suppressWarnings(if (!is.na(csv_file)) {
+  data.table::fwrite(valid_entries, file = csv_file)
+})
+
 print("Complete.")
 
