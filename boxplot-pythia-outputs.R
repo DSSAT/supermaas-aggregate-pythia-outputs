@@ -86,18 +86,27 @@ if (!dir.exists(in_dir)) {
 
 for(f in flist) {
   table <- data.table::fread(f)
-  if (!argv$keep_invalid) {
-    valid_entries <- table[
-      !is.na(as.Date(paste0(EDAT), "%Y%j")) &
-        !is.na(as.Date(paste0(MDAT), "%Y%j")) &
-        !is.na(as.Date(paste0(ADAT), "%Y%j")) &
-        !is.na(as.Date(paste0(HDAT), "%Y%j")) &
-        HWAH >= 0
-    ]
-  } else {
-    valid_entries <- table
-  }
+  valid_entries <- table
   colNames <- colnames(valid_entries)
+  
+  if (!argv$keep_invalid) {
+    if ("EDAT" %in% colNames) {
+      valid_entries <- valid_entries[!is.na(as.Date(paste0(EDAT), "%Y%j"))]
+    }
+    if ("MDAT" %in% colNames) {
+      valid_entries <- valid_entries[!is.na(as.Date(paste0(MDAT), "%Y%j"))]
+    }
+    if ("ADAT" %in% colNames) {
+      valid_entries <- valid_entries[!is.na(as.Date(paste0(ADAT), "%Y%j"))]
+    }
+    if ("HDAT" %in% colNames) {
+      valid_entries <- valid_entries[!is.na(as.Date(paste0(HDAT), "%Y%j"))]
+    }
+    if ("HWAH" %in% colNames) {
+      valid_entries <- valid_entries[HWAH >= 0]
+    }
+  }
+  
   if (!"HYEAR" %in% colNames && ("HYEAR" %in% variables || "HYEAR" %in% factor)) {
     valid_entries[,`:=`(HYEAR = trunc(HDAT/1000))]
   }
