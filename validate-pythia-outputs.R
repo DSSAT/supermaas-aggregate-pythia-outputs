@@ -85,7 +85,7 @@ if (!is.na(argv$output)) {
 }
 
 # Load shape file if avaiable
-shp_data <- NA
+shpData <- NA
 suppressWarnings(if (!is.na(argv$shape_file)) {
   library(ggplot2)
   library(sf)
