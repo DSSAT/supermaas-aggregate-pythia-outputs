@@ -59,11 +59,11 @@ totTonVariables <- argv$total_ton
 suppressWarnings(if (is.na(variables) && is.na(totVariables) && is.na(avgVariables) && is.na(totTonVariables)) {
   variables <- predefined_vars
 })
-factors <- argv$factor
+factors <- argv$factors
 suppressWarnings(if (is.na(factors)) {
   factors <- default_factors
 })
-aggFactors <- argv$factor_agg
+aggFactors <- argv$factors_agg
 suppressWarnings(if (is.na(aggFactors)) {
   aggFactors <- c(factors, "HYEAR")
 })
