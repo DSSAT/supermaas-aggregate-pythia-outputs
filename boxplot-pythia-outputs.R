@@ -179,7 +179,7 @@ for (variable in variables) {
     if (xColName != "factor_id") {
       df[,(xColName):=as.character(get(xColName))]
     }
-    ggplot(data = df, aes(x = get(xColName), y = get(variable))) +
+    plot <- ggplot(data = df, aes(x = get(xColName), y = get(variable))) +
       geom_boxplot(
         # aes(fill = HWAH),
         outlier.colour = NA,
@@ -210,9 +210,10 @@ for (variable in variables) {
     }
     
     ggsave(
+      plot,
       filename = file_name,
-      plot = last_plot(),
-      path = out_dir,
+      # plot = last_plot(),
+      path = out_dir
     )
   }
   
