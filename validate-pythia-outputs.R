@@ -296,19 +296,19 @@ for (variable in variables) {
     # calculate min, max, mean, median and std
     if (variable %in% var_dic[unit == "date", name]) {
       if (argv$min) {
-        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + min(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + min(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
       }
       if (argv$max) {
-        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + max(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + max(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
       }
-      mean <- valid_entries[,format(as.Date("1970-01-01") + mean(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]
+      mean <- valid_entries[,format(as.Date("1970-01-01") + mean(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]
       if (argv$mean) {
         row <- c(row, paste0(mean))
       }
       if (argv$med) {
-        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + median(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + median(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
       }
-      std <- valid_entries[,format(as.Date("1970-01-01") + sd(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]
+      std <- valid_entries[,sd(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01"))))]
       if (argv$std) {
         row <- c(row, paste0(std))
       }
@@ -365,7 +365,11 @@ for (variable in variables) {
     
     # Use Z-Score to detect outlier values
     zscore <- argv$`z-score`
-    outlierReport <- valid_entries[abs((get(header)-mean)/std) > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+    if (variable %in% var_dic[unit == "date", name]) {
+      outlierReport <- valid_entries[abs((get(header)-as.Date(paste0(PYEAR, "-", mean)))/std) > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+    } else {
+      outlierReport <- valid_entries[abs((get(header)-mean)/std) > zscore, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
+    }
     outlierReport[, (variable) := tempvar]
     outlierReport[, tempvar := NULL]
     row <- c(row, paste0(outlierReport[,.N]))
