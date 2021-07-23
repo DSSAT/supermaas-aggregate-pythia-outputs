@@ -18,7 +18,7 @@ drawMap <- function(plotData, shpData, cateoryText, variable){
     setnames(plotData, colnames(plotData)[length(colnames(plotData))], variable)
     plotDataSf <- st_as_sf(plotData, coords = c("LONGITUDE", "LATITUDE"), crs =4326) #converting into spatial data
     st_crs(plotDataSf)
-    ggplot()+
+    plot <- ggplot()+
       geom_sf(data=plotDataSf, aes(color=get(variable)))+
       geom_sf(data=shpData, size=0.25, alpha=0.5, fill="grey")+
       labs(x="Longitude", y="Latitude", color=variable)+
@@ -34,9 +34,13 @@ drawMap <- function(plotData, shpData, cateoryText, variable){
     
     
     ggsave(
+      plot,
       filename = paste0(base_file_name, "_", variable, "_", cateoryText, ".png"),
       plot = last_plot(),
-      path = out_dir
+      # path = out_dir,
+      width = 10,
+      height = 10,
+      limitsize = F
     )
   }
 }
