@@ -294,23 +294,44 @@ for (variable in variables) {
     }
     
     # calculate min, max, mean, median and std
-    if (argv$min) {
-      row <- c(row, paste0(valid_entries[,min(get(header))]))
+    if (variable %in% var_dic[unit == "date", name]) {
+      if (argv$min) {
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + min(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+      }
+      if (argv$max) {
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + max(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+      }
+      mean <- valid_entries[,format(as.Date("1970-01-01") + mean(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]
+      if (argv$mean) {
+        row <- c(row, paste0(mean))
+      }
+      if (argv$med) {
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + median(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+      }
+      std <- valid_entries[,format(as.Date("1970-01-01") + sd(as.integer(as.Date(paste0(get(header)), "%Y%j") - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]
+      if (argv$std) {
+        row <- c(row, paste0(std))
+      }
+    } else {
+      if (argv$min) {
+        row <- c(row, paste0(valid_entries[,min(get(header))]))
+      }
+      if (argv$max) {
+        row <- c(row, paste0(valid_entries[,max(get(header))]))
+      }
+      mean <- valid_entries[,mean(get(header))]
+      if (argv$mean) {
+        row <- c(row, paste0(mean))
+      }
+      if (argv$med) {
+        row <- c(row, paste0(valid_entries[,median(get(header))]))
+      }
+      std <- valid_entries[,sd(get(variable))]
+      if (argv$std) {
+        row <- c(row, paste0(std))
+      }
     }
-    if (argv$max) {
-      row <- c(row, paste0(valid_entries[,max(get(header))]))
-    }
-    mean <- valid_entries[,mean(get(header))]
-    if (argv$mean) {
-      row <- c(row, paste0(mean))
-    }
-    if (argv$med) {
-      row <- c(row, paste0(valid_entries[,median(get(header))]))
-    }
-    std <- valid_entries[,sd(get(variable))]
-    if (argv$std) {
-      row <- c(row, paste0(std))
-    }
+    
     
     # Use min/max to detect outlier values
     max <- var_dic[name==variable,max]
