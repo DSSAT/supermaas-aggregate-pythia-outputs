@@ -1,7 +1,7 @@
 name,unit,min,max,factor,total,average,total_ton,timeline
 LATITUDE,degree,-90,90,lat,,,,
 LONGITUDE,degree,-180,180,lng,,,,
-HARVEST_AREA,ha,0,,,,,,
+HARVEST_AREA,ha,0,,,HAREA_TOT,,,
 ADMLV0,text,,,country,,,,
 ADMLV1,text,,,region,,,,
 ADMLVP,fraction,0,1,,,,,

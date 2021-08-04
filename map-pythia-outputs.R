@@ -75,7 +75,7 @@ for (variable in variables) {
   for (variable in headers) {
     if (variable %in% colnames(plot_yld_data)) {
       print(paste0("Processing map for ", variable))
-      ggplot()+
+      plot <- ggplot()+
         geom_sf(data=plot_yld_data, aes(color=get(variable)))+
         geom_sf(data=shp_data, size=0.25, alpha=0.5, fill="grey")+
         labs(x="Longitude", y="Latitude", color=variable)+
@@ -91,8 +91,9 @@ for (variable in variables) {
       
       
       ggsave(
+        plot,
         filename = paste0(base_file_name, "_", variable, ".", file_ext),
-        plot = last_plot(),
+        # plot = last_plot(),
         path = out_dir
       )
     } else {
