@@ -18,6 +18,7 @@ p <- argparser::arg_parser("Pre-parsinb the factor from RUN_NAME column on Pythi
 p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
 p <- argparser::add_argument(p, "title", help=paste0("Title for the new factor"))
 p <- argparser::add_argument(p, "--values", short="-v", nargs=Inf, help=paste0("Provide the list of values for this factor"))
+p <- argparser::add_argument(p, "--unit", short="-v", default="text", help=paste0("Provide the unit for this factor"))
 p <- argparser::add_argument(p, "--keep_original", short="-o", flag = TRUE, help=paste0("Keep Overwrite the original file. If missing, will use 'modified_' as the prefix for the file name"))
 
 argv <- argparser::parse_args(p)
@@ -30,6 +31,7 @@ suppressWarnings(in_dir <- normalizePath(argv$input))
 
 title <- argv$title
 values <- argv$values
+unit <- argv$unit
 
 isKeepOriginal <- argv$keep_original
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
@@ -76,4 +78,16 @@ for(f in flist) {
 
   data.table::fwrite(valid_entries, file = f)
 }
+
+if (var_dic[name==title,.N] == 0) {
+  cat(paste0("Update DATA_CDE.csv file to add factor ", title))
+  var_dic <- rbind(var_dic, list(title, unit,NA,NA,tolower(title)), fill=T)
+  headers <- colnames(var_dic)
+  
+  for (header in headers[5:length(headers)]) {
+    var_dic[get(header)=="",(header):=NA]
+  }
+  data.table::fwrite(var_dic, file = data_cde_file)
+}
+
 
