@@ -203,12 +203,14 @@ report <- data.table(Variable=rnorm(0),
                      "Zero_pct" = rnorm(0),
                      "Zero_cnt" = rnorm(0))
 if (argv$min) report[,`:=`(min=rnorm(0))]
-if (argv$max) report[,`:=`(max=rnorm(0))]
-if (argv$mean) report[,`:=`(mean=rnorm(0))]
 if (argv$med) report[,`:=`(median=rnorm(0))]
+if (argv$mean) report[,`:=`(mean=rnorm(0))]
+if (argv$max) report[,`:=`(max=rnorm(0))]
 if (argv$std) report[,`:=`(std=rnorm(0))]
-report[,`:=`(outlier_min_max=rnorm(0))]
-report[,`:=`(outlier_z_score=rnorm(0))]
+report[,`:=`(outlier_min_max_pct=rnorm(0))]
+report[,`:=`(outlier_min_max_cnt=rnorm(0))]
+report[,`:=`(outlier_z_score_pct=rnorm(0))]
+report[,`:=`(outlier_z_score_cnt=rnorm(0))]
 outlierReportM <- data.table(LATITUDE=rnorm(0),
                              LONGITUDE = rnorm(0),
                              PYEAR = rnorm(0),
@@ -264,13 +266,13 @@ for (variable in variables) {
     if (argv$min) {
       row <- c(row, "")
     }
-    if (argv$max) {
+    if (argv$med) {
       row <- c(row, "")
     }
     if (argv$mean) {
       row <- c(row, "")
     }
-    if (argv$med) {
+    if (argv$max) {
       row <- c(row, "")
     }
     if (argv$std) {
@@ -286,7 +288,7 @@ for (variable in variables) {
     
   } else {
     if (variable %in% var_dic[unit == "date", name]) {
-      valid_entries <- df[!is.na(get(header))]
+      valid_entries <- df[!is.na(get(header))][!is.na(PDAT_ISO)]
     } else if (argv$no_zero && !variable %in% var_dic[unit == "degree_c", name]) {
       valid_entries <- df[get(header)> -99 & get(header) != 0]
     } else {
@@ -298,15 +300,15 @@ for (variable in variables) {
       if (argv$min) {
         row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + min(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
       }
-      if (argv$max) {
-        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + max(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+      if (argv$med) {
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + median(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
       }
       mean <- valid_entries[,format(as.Date("1970-01-01") + mean(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]
       if (argv$mean) {
         row <- c(row, paste0(mean))
       }
-      if (argv$med) {
-        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + median(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
+      if (argv$max) {
+        row <- c(row, paste0(valid_entries[,format(as.Date("1970-01-01") + max(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01")))), "%m-%d")]))
       }
       std <- valid_entries[,sd(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01"))))]
       if (argv$std) {
@@ -316,15 +318,15 @@ for (variable in variables) {
       if (argv$min) {
         row <- c(row, paste0(valid_entries[,min(get(header))]))
       }
-      if (argv$max) {
-        row <- c(row, paste0(valid_entries[,max(get(header))]))
+      if (argv$med) {
+        row <- c(row, paste0(valid_entries[,median(get(header))]))
       }
       mean <- valid_entries[,mean(get(header))]
       if (argv$mean) {
         row <- c(row, paste0(mean))
       }
-      if (argv$med) {
-        row <- c(row, paste0(valid_entries[,median(get(header))]))
+      if (argv$max) {
+        row <- c(row, paste0(valid_entries[,max(get(header))]))
       }
       std <- valid_entries[,sd(get(variable))]
       if (argv$std) {
@@ -339,7 +341,13 @@ for (variable in variables) {
     outlierReport <- valid_entries[get(header) > max | get(header) < min, .(LATITUDE,LONGITUDE,PYEAR,HYEAR,RUN_NAME,CR,tempvar=get(variable))]
     outlierReport[, (variable) := tempvar]
     outlierReport[, tempvar := NULL]
-    row <- c(row, paste0(outlierReport[,.N]))
+    if (is.na(max) && is.na(min)) {
+      row <- c(row, NA, NA)
+    } else {
+      row <- c(row,
+               paste0(round(outlierReport[,.N]/total*100, 2), "%"),
+               paste0(outlierReport[,.N], "/", total))
+    }
     if (outlierReport[,.N] > 0) {
       if (outlierReportM[,.N] == 0) {
         outlierReportM <- outlierReport
@@ -372,7 +380,9 @@ for (variable in variables) {
     }
     outlierReport[, (variable) := tempvar]
     outlierReport[, tempvar := NULL]
-    row <- c(row, paste0(outlierReport[,.N]))
+    row <- c(row,
+             paste0(round(outlierReport[,.N]/total*100, 2), "%"),
+             paste0(outlierReport[,.N], "/", total))
     if (outlierReport[,.N] > 0) {
       if (outlierReportZ[,.N] == 0) {
         outlierReportZ <- outlierReport
