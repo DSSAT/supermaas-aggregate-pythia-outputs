@@ -247,6 +247,8 @@ suppressWarnings(if (!is.na(totVariables)) {
         aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
         final[, (header):= aggregated[,get(header)]]
         
+      } else if (variable == "HARVEST_AREA") {
+        aggregated[, (header):= calc_production[,sum(get(variable)), by = factors][,V1]]
       } else {
         print(paste("Processing summary for",  variable, ", which is unsupported and skipped"))
       }
