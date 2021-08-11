@@ -33,7 +33,7 @@ argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case1", "test\\output\\report1.csv", "-v", "PRODUCTION", "TIMESTAMP", "-t", "CWAM", "HWAH", "-a", "HDAT", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
-# argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2.csv", "-v", "PRODUCTION", "-t", "CWAM", "HWAH", "-a", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH"))
+# argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2.csv", "-v", "PRODUCTION", "-t","HARVEST_AREA", "CWAM", "HWAH", "-a", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
 # argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "GSD", "ETFD", "FTHD", "HIAM", "-f", "LATITUDE", "LONGITUDE"))
@@ -249,6 +249,7 @@ suppressWarnings(if (!is.na(totVariables)) {
         
       } else if (variable == "HARVEST_AREA") {
         aggregated[, (header):= calc_production[,sum(get(variable)), by = factors][,V1]]
+        final[, (header):= aggregated[,get(header)]]
       } else {
         print(paste("Processing summary for",  variable, ", which is unsupported and skipped"))
       }
