@@ -29,24 +29,14 @@ p <- argparser::add_argument(p, "--yield_threshold_constant", short="-c", defaul
 # p <- argparser::add_argument(p, "--is_aggregated", short="-i", flag = TRUE, help=paste0("Indicate the input folder or file is already the result of aggregation script"))
 # # p <- argparser::add_argument(p, "--boxplot", short="-b", help = "File Path to generaete box plot graph")
 p <- argparser::add_argument(p, "--variables", short="-v", nargs=1, help=paste0("Variable names for determine population affected by crop failure:, by default will be ", paste(default_vars_threshold, collapse = ",")))
-p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for threshhold calculation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors_population, collapse = ",")))
+p <- argparser::add_argument(p, "--factors_threshold", short="-f", nargs=Inf, help=paste0("Factor names for threshhold calculation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors_population, collapse = ",")))
 p <- argparser::add_argument(p, "--factors_population", short="-p", nargs=Inf, help=paste0("Factor names for threshhold calculation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors, collapse = ",")))
 # p <- argparser::add_argument(p, "--factors_agg", short="-c", nargs=Inf, help=paste0("Factor names for aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will use factors for statistics plus HYEAR"))
 p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
 argv <- argparser::parse_args(p)
 
 # for test only
-argv <- argparser::parse_args(p, c("test\\data\\case16", "test\\data\\case2", "test\\output\\report_P1.csv"))
-# argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2.csv", "-v", "PRODUCTION", "-t", "CWAM", "HWAH", "-a", "MDAT", "CWAM", "HWAH", "-o", "CWAM", "HWAH"))
-# argv <- argparser::parse_args(p, c("test\\data\\case2", "test\\output\\report2_dev.csv"))
-# argv <- argparser::parse_args(p, c("test\\data\\case5\\ETH_Maize_irrig", "test\\data\\case5\\report5.csv", "-v", "PRODUCTION", "CWAM", "HWAH"))
-# argv <- argparser::parse_args(p, c("test\\data\\case6", "test\\output\\report6.csv", "-a", "HWAH", "GSD", "ETFD", "FTHD", "HIAM", "-f", "LATITUDE", "LONGITUDE"))
-# argv <- argparser::parse_args(p, c("test\\data\\case6\\pp_GGCMI_Maize_ir.csv", "test\\output\\report6.csv", "-a", "PRCP", "HWAH", "-f", "LATITUDE", "LONGITUDE"))
-# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2.csv", "-a", "PRCP", "HWAH", "-f","LONGITUDE", "LATITUDE"))
-# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
-# argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1"))
-# argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
-# argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0.csv", "test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1", "HYEAR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case16", "test\\data\\case2", "test\\output\\report_P1.csv"))
 
 suppressWarnings(in_dir_base <- normalizePath(argv$input_base))
 suppressWarnings(in_dir_fore <- normalizePath(argv$input_fore))
@@ -58,18 +48,14 @@ variables <- argv$variables
 suppressWarnings(if (is.na(variables)) {
   variables <- default_vars
 })
-factors_threshold <- argv$factors
+factors_threshold <- argv$factors_threshold
 suppressWarnings(if (is.na(factors_threshold)) {
   factors_threshold <- default_factors_threshold
 })
-factors_population <- argv$factors
+factors_population <- argv$factors_population
 suppressWarnings(if (is.na(factors_population)) {
   factors_population <- default_factors_population
 })
-# aggFactors <- argv$factors_agg
-# suppressWarnings(if (is.na(aggFactors)) {
-#   aggFactors <- c(factors, "HYEAR")
-# })
 
 if (!dir.exists(in_dir_base) && !file.exists(in_dir_base)) {
   stop(sprintf("%s does not exist.", in_dir_base))
@@ -85,11 +71,7 @@ if (!dir.exists(out_dir)) {
   dir.create(out_dir, recursive = TRUE)
 }
 
-# boxplot <- argv$boxplot
-# if (!is.na(boxplot) && !dir.exists(dirname(boxplot))) {
-#   dir.create(dirname(boxplot), recursive = TRUE)
-# }
-
+# Process baseline data and calculate threshold
 flist <- list()
 dts <- list()
 print("Loading files for calculation threshold from baseline conditions")
@@ -140,6 +122,7 @@ if (yield_threshold_method == "std") {
   stop(sprintf("%s is not supported.", yield_threshold_method))
 }
 
+# Process forecast data and calculate population affected by crop failure
 flist <- list()
 dts <- list()
 print("Loading files for forecast simulations")
