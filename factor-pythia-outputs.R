@@ -14,7 +14,7 @@ if (file.exists(data_cde_file)) {
 }
 
 
-p <- argparser::arg_parser("Pre-parsinb the factor from RUN_NAME column on Pythia outputs in order to do the following validation and aggregation for World Modelers(fixed)")
+p <- argparser::arg_parser("Pre-parsing the factor from RUN_NAME column on Pythia outputs in order to do the following validation and aggregation for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
 p <- argparser::add_argument(p, "title", help=paste0("Title for the new factor"))
 p <- argparser::add_argument(p, "--values", short="-v", nargs=Inf, help=paste0("Provide the list of values for this factor"))
@@ -24,7 +24,7 @@ p <- argparser::add_argument(p, "--keep_original", short="-o", flag = TRUE, help
 argv <- argparser::parse_args(p)
 
 # for test only
-argv <- argparser::parse_args(p, c("test\\data\\case1", "SEASON", "-v", "Belg", "Dummy"))
+# argv <- argparser::parse_args(p, c("test\\data\\case1", "SEASON", "-v", "Belg", "Dummy"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg", "SEASON", "--values", "Belg", "-o"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
