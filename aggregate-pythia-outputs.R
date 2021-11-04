@@ -122,6 +122,9 @@ if (!"HARVEST_AREA" %in% colNames) {
   valid_entries[,`:=`(HARVEST_AREA = 1)]
 }
 
+if ("ADMLV1" %in% factors && !"ADMLV0" %in% factors) {
+  factors <- c(factors, "ADMLV0")
+}
 if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) || 
     !"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
   
@@ -188,9 +191,7 @@ if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) ||
 if (!"ADMLVP" %in% colNames) {
   valid_entries[,`:=`(ADMLVP = 1)]
 }
-if ("ADMLV1" %in% factors && !"ADMLV0" %in% factors) {
-  factors <- c(factors, "ADMLV0")
-}
+
 
 print("Starting aggregation.")
 # if (argv$period_annual) {
