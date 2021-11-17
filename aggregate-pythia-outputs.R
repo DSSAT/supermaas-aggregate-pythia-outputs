@@ -82,7 +82,7 @@ if (!dir.exists(in_dir)) {
   flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
 }
 for(f in flist) {
-  dts <- c(dts, list(data.table::fread(f)))
+  dts <- c(dts, list(data.table::fread(f)[,FILE := tools::file_path_sans_ext(basename(f))]))
 }
 df <- data.table::rbindlist(dts)
 valid_entries <- df
