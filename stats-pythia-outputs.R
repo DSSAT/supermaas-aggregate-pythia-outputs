@@ -16,6 +16,11 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
+crop_cde_file <- "crop_codes.csv"
+if (file.exists(crop_cde_file)) {
+  crop_dic <- data.table::fread(crop_cde_file)
+}
+
 predefined_vars <- c("PRODUCTION", "TIMESTAMP")
 predefined_percentiles <- c(0, 5, 25,50, 75, 95, 100)
 default_factors <- c("ADMLV0", "ADMLV1")
@@ -73,7 +78,7 @@ suppressWarnings(if (is.na(factors)) {
 })
 aggFactors <- argv$factors_agg
 suppressWarnings(if (is.na(aggFactors)) {
-  aggFactors <- c(factors, "HYEAR")
+  aggFactors <- c(factors, "HYEAR", "CR")
 })
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
@@ -160,8 +165,6 @@ if (!argv$is_aggregated) {
   df <- data.table::rbindlist(dts)
 }
 valid_entries <- df
-valid_entries[file=="pp_GHA_CC_FCT_GHMZ_rf_0N_CC"]
-# colNames <- colnames(valid_entries)
 
 print("Starting statistics.")
 final <- valid_entries[,.(Var = predefined_percentiles), by = c(var_dic[name %in% factors, factor])]
@@ -259,11 +262,21 @@ if (boxplotFlg) {
         plotData[,(plotXVarHeader):=as.character(get(plotXVarHeader))]
       }
       
+      # Title rule: factors list, crop name, variable name (e.g. average yield)
+      crop <- crop_dic[DSSAT_code==plotData[,get(var_dic[name=="CR", factor])][1], Common_name]
+      if (var_dic[average==variable, .N] > 0) {
+        plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("average ", var_dic[average==variable, boxplot]), sep=", ")
+      } else if (var_dic[total==variable, .N] > 0) {
+        plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total==variable, boxplot]), sep=", ")
+      # } else if (var_dic[total_ton==variable, N] > 0) {
+      #   plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
+      } else {
+        plotTitle <- paste(str_replace_all(key, "__", ", "), crop, variable, sep=", ")
+      }
+      
       for (i in 1:ceiling(factorNum/maxBarNum)) {
         
         df <- plotData[factor_id %in% (1 + (i-1) * maxBarNum) : (i*maxBarNum)]
-        
-        
         
         plot <- ggplot(data = df, aes(x = get(plotXVarHeader), y = get(variable))) +
           geom_boxplot(
@@ -280,7 +293,7 @@ if (boxplotFlg) {
                 legend.title = element_text(size = 13)) +
           # theme(axis.text = element_text(size = 13)) +
           theme(axis.title = element_text(size = 13, face = "bold")) +
-          labs(x = boxplotX, y = variable, colour = "Legend", title = paste0("BoxPlot for ", variable)) +
+          labs(x = boxplotX, y = variable, colour = "Legend", title = plotTitle) +
           theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
           theme(panel.grid.minor = element_blank()) +
           theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
