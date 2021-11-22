@@ -58,6 +58,8 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1"))
 # argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0.csv", "test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1", "HYEAR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result2\\report13_0.csv", "-a", "HWAH", "-f","ADMLV0", "FILE", "-b", "-p", "FILE", "-r", "ADMLV0", "-l", "pp_GHA_CC_FCT_GHMZ_rf_0N_CC", "-s", "pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result4\\report13_1.csv", "-a", "HWAH", "-f","ADMLV1", "FILE", "-b", "-p", "FILE", "-r", "ADMLV1", "-l", "pp_GHA_CC_FCT_GHMZ_rf_0N_CC", "-s", "pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -80,6 +82,9 @@ aggFactors <- argv$factors_agg
 suppressWarnings(if (is.na(aggFactors)) {
   aggFactors <- c(factors, "HYEAR", "CR")
 })
+if ("ADMLV1" %in% aggFactors && !"ADMLV0" %in% aggFactors) {
+  aggFactors <- c("ADMLV0", aggFactors)
+}
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
