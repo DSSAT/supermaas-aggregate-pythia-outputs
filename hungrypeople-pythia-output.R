@@ -28,15 +28,16 @@ p <- argparser::add_argument(p, "--yield_threshold_method", short="-m", default=
 p <- argparser::add_argument(p, "--yield_threshold_constant", short="-c", default="1.5", help=paste0("The constant used for calculating yield threshold"))
 # p <- argparser::add_argument(p, "--is_aggregated", short="-i", flag = TRUE, help=paste0("Indicate the input folder or file is already the result of aggregation script"))
 # # p <- argparser::add_argument(p, "--boxplot", short="-b", help = "File Path to generaete box plot graph")
-p <- argparser::add_argument(p, "--variables", short="-v", nargs=1, help=paste0("Variable names for determine population affected by crop failure:, by default will be ", paste(default_vars_threshold, collapse = ",")))
-p <- argparser::add_argument(p, "--factors_threshold", short="-f", nargs=Inf, help=paste0("Factor names for threshhold calculation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors_population, collapse = ",")))
-p <- argparser::add_argument(p, "--factors_population", short="-p", nargs=Inf, help=paste0("Factor names for threshhold calculation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors, collapse = ",")))
+p <- argparser::add_argument(p, "--variables", short="-v", nargs=1, help=paste0("Variable names for determine population affected by crop failure:, by default will be ", paste(default_vars, collapse = ",")))
+p <- argparser::add_argument(p, "--factors_threshold", short="-f", nargs=Inf, help=paste0("Factor names for threshhold calculation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors_threshold, collapse = ",")))
+p <- argparser::add_argument(p, "--factors_population", short="-p", nargs=Inf, help=paste0("Factor names for threshhold calculation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors_population, collapse = ",")))
 # p <- argparser::add_argument(p, "--factors_agg", short="-c", nargs=Inf, help=paste0("Factor names for aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will use factors for statistics plus HYEAR"))
 p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
 argv <- argparser::parse_args(p)
 
 # for test only
-# argv <- argparser::parse_args(p, c("test\\data\\case16", "test\\data\\case2", "test\\output\\report_P1.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17\\pp_GHA_ALL_Maize_rf_0N_main_OBATANPA_base.csv", "test\\data\\case17\\pp_GHA_ALL_Maize_rf_highN_main_OBATANPA_base.csv", "test\\data\\case17\\result\\report_P1.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17", "test\\data\\case17", "test\\data\\case17\\result\\report_P1.csv"))
 
 suppressWarnings(in_dir_base <- normalizePath(argv$input_base))
 suppressWarnings(in_dir_fore <- normalizePath(argv$input_fore))
@@ -45,7 +46,7 @@ suppressWarnings(out_file <- normalizePath(argv$output))
 yield_threshold_method <- argv$yield_threshold_method
 yield_threshold_constant <- as.numeric(argv$yield_threshold_constant)
 variables <- argv$variables
-suppressWarnings(if (is.na(variables)) {
+suppressWarnings(if (is.na(variables) || is.null(variables)) {
   variables <- default_vars
 })
 factors_threshold <- argv$factors_threshold
@@ -136,6 +137,28 @@ for(f in flist) {
 }
 df2 <- data.table::rbindlist(dts)
 
+if (!"ADMLV0" %in% colnames(df2) || !"ADMLV1" %in% colnames(df2)) {
+  print("Calcuating country and region information for each pixel")
+  runCommand <- paste("Rscript","fix-pythia-outputs.R", in_dir_fore, "-g", "6")
+  suppressWarnings(ret <- system(runCommand, show.output.on.console=FALSE))
+  if (ret != 0) {
+    print("Error happened during aggregation, process quit. Please run aggregation script separatedly to pre-check your run.")
+    q()
+  }
+  flist <- list()
+  dts <- list()
+  print("Loading files for forecast simulations")
+  if (!dir.exists(in_dir_fore)) {
+    flist <- in_dir_fore
+  } else {
+    flist <- list.files(path = in_dir_fore, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
+  }
+  for(f in flist) {
+    dts <- c(dts, list(data.table::fread(f)))
+  }
+  df2 <- data.table::rbindlist(dts)
+}
+
 valid_entries <- df2
 colNames <- colnames(valid_entries)
 if ("EDAT" %in% colNames) {
@@ -162,15 +185,16 @@ if (!"HYEAR" %in% colNames) {
 # }
 
 print("Starting crop failure impact calculation")
-forecast <- merge(valid_entries, baseline, by=factors_threshold, all=T)
+forecast <- merge(valid_entries, baseline, by=factors_threshold, all.x=T)
 forecast[, PIXEL_TOTAL_HARVEST_AREA := sum(HARVEST_AREA), by = factors_population]
 forecastLowHarvest <- forecast[get(variable) < THRESHOLD]
 forecastLowHarvest[, PIXEL_LOW_HARVEST_AREA := sum(HARVEST_AREA), by = factors_population]
 forecastLowHarvest[, HUNGRY_PEOPLE := POPULATION * PIXEL_LOW_HARVEST_AREA/ PIXEL_TOTAL_HARVEST_AREA]
 final_ADMLV0 <- forecastLowHarvest[,.(HUNGRY_PEOPLE = sum(HUNGRY_PEOPLE)), by = .(ADMLV0)]
+# final_ADMLV0 <- forecastLowHarvest[,.(ADMLV1 = "", HUNGRY_PEOPLE = sum(HUNGRY_PEOPLE)), by = .(ADMLV0)]
 final_ADMLV1 <- forecastLowHarvest[,.(HUNGRY_PEOPLE = sum(HUNGRY_PEOPLE)), by = .(ADMLV0, ADMLV1)]
 
 data.table::fwrite(final_ADMLV0, file = out_file)
-data.table::fwrite(final_ADMLV1, file = out_file, append = T)
+data.table::fwrite(final_ADMLV1, file = out_file, append = T, col.names = T)
 
 print("Complete.")
