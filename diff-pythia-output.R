@@ -21,7 +21,7 @@ p <- argparser::add_argument(p, "input_base", "Aggregation result file for basel
 p <- argparser::add_argument(p, "input_scenario", "Aggregation result file for scenario data")
 p <- argparser::add_argument(p, "output", "File Path to generaete box plot graph")
 p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable names for comparison, if not given, then comparing all non-factor columns"))
-p <- argparser::add_argument(p, "--factor", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor!="", factor]), collapse=","), "]"))
+p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor!="", factor]), collapse=","), "]"))
 
 argv <- argparser::parse_args(p)
 
@@ -69,7 +69,7 @@ if (is.na(variables)) {
 print("Comparing files for relative difference comparison")
 diff <- merge(df_base, df_scenario, by = factors)
 for (variable in variables) {
-  diff[,(paste0("DIFF_", variable)) := (crop_per_person.y - crop_per_person.x)/crop_per_person.x * 100]
+  diff[,(paste0("DIFF_", variable)) := (get(paste0(variable, ".y")) - get(paste0(variable, ".x")))/get(paste0(variable, ".x")) * 100]
   diff[,(paste0(variable, ".x")):= NULL]
   diff[,(paste0(variable, ".y")):= NULL]
 }

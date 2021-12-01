@@ -84,9 +84,9 @@ suppressWarnings(if (is.na(aggFactors)) {
 })
 if ("ADMLV1" %in% aggFactors && !"ADMLV0" %in% aggFactors) {
   aggFactors <- c("ADMLV0", aggFactors)
-  if ("ADMLV1" %in% plotFactors && !"ADMLV0" %in% plotFactors) {
-    plotFactors <- c("ADMLV0", plotFactors)
-  }
+  #if ("ADMLV1" %in% plotFactors && !"ADMLV0" %in% plotFactors) {
+  #  plotFactors <- c("ADMLV0", plotFactors)
+  #}
 }
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {

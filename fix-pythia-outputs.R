@@ -137,7 +137,7 @@ for(f in flist) {
     cat("Caculating Admin Levels ...")
     
     # Use GADM whole world shape file to query the country and region names
-    gadmShape <- shapefile("gadm_shapes\\gadm36_1.shp")
+    gadmShape <- shapefile("gadm_shapes/gadm36_1.shp")
     
     # proj4str <- CRS(proj4string(gadmShape))
     proj4str <- CRS("+init=epsg:4326")
