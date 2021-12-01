@@ -14,7 +14,7 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
-predefined_vars <- c("PRODUCTION", "TIMESTAMP")
+predefined_vars <- c("PRODUCTION", "TIMESTAMP", "CROP_PER_PERSON")
 default_factors <- c("LATITUDE", "LONGITUDE", "HYEAR")
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
@@ -43,6 +43,9 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1"))
 # argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0.csv", "test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1", "HYEAR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result2_mid\\report13_0.csv", "-a", "HWAH", "-f","ADMLV0", "FILE", "HYEAR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17\\base", "test\\data\\case17\\agg_result\\agg_crop_per_person_base.csv", "-v", "CROP_PER_PERSON", "-f","ADMLV1", "HYEAR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_scenario.csv", "-v", "CROP_PER_PERSON", "-f","ADMLV1", "HYEAR"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -224,6 +227,10 @@ suppressWarnings(if (!is.na(variables)) {
         calc_production[,(variable) := HARVEST_AREA * HWAH]
         aggregated[, (variable):= calc_production[,sum(as.numeric(get(variable))), by = factors][,V1]]
         final[, production := aggregated[,round(get(variable)/1000)]]
+      } else if (variable == "CROP_PER_PERSON") {
+        calc_production[,(variable) := HARVEST_AREA * HWAH]
+        aggregated[, (variable):= calc_production[,sum(as.numeric(get(variable)))/sum(POPULATION), by = factors][,V1]]
+        final[, crop_per_person := aggregated[,round(get(variable))]]
       }
     } else {
       print(paste("Processing",  variable, ", which is unsupported and skipped"))
