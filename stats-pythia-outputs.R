@@ -84,6 +84,9 @@ suppressWarnings(if (is.na(aggFactors)) {
 })
 if ("ADMLV1" %in% aggFactors && !"ADMLV0" %in% aggFactors) {
   aggFactors <- c("ADMLV0", aggFactors)
+  if ("ADMLV1" %in% plotFactors && !"ADMLV0" %in% plotFactors) {
+    plotFactors <- c("ADMLV0", plotFactors)
+  }
 }
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
@@ -271,12 +274,15 @@ if (boxplotFlg) {
       crop <- crop_dic[DSSAT_code==plotData[,get(var_dic[name=="CR", factor])][1], Common_name]
       if (var_dic[average==variable, .N] > 0) {
         plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("average ", var_dic[average==variable, boxplot]), sep=", ")
+        variableInFile <- paste0("average_", var_dic[average==variable, boxplot])
       } else if (var_dic[total==variable, .N] > 0) {
         plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total==variable, boxplot]), sep=", ")
+        variableInFile <- paste0("total_", var_dic[average==variable, boxplot])
       # } else if (var_dic[total_ton==variable, N] > 0) {
       #   plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
       } else {
         plotTitle <- paste(str_replace_all(key, "__", ", "), crop, variable, sep=", ")
+        variableInFile <- variable
       }
       
       for (i in 1:ceiling(factorNum/maxBarNum)) {
@@ -298,7 +304,7 @@ if (boxplotFlg) {
                 legend.title = element_text(size = 13)) +
           # theme(axis.text = element_text(size = 13)) +
           theme(axis.title = element_text(size = 13, face = "bold")) +
-          labs(x = boxplotX, y = variable, colour = "Legend", title = plotTitle) +
+          labs(x = boxplotX, y = variableInFile, colour = "Legend", title = plotTitle) +
           theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
           theme(panel.grid.minor = element_blank()) +
           theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
@@ -307,9 +313,9 @@ if (boxplotFlg) {
         # scale_fill_manual(values=colors)
         
         if (ceiling(factorNum/maxBarNum) == 1) {
-          file_name <- paste0(base_file_name, "-", variable, "-", str_replace(key, "\\.", "__"), ".", extension)
+          file_name <- paste0(variableInFile, "-", str_replace(key, "\\.", "__"), ".", extension)
         } else {
-          file_name <- paste0(base_file_name, "-", variable, "-", str_replace(key, "\\.", "__"), "_", i, ".", extension)
+          file_name <- paste0(variableInFile, "-", str_replace(key, "\\.", "__"), "_", i, ".", extension)
         }
         
         ggsave(
