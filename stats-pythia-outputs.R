@@ -2,6 +2,8 @@
 library(argparser)
 library(data.table)
 library(raster)
+library(ggplot2)
+library(stringr)
 
 setwd(".")
 
@@ -12,6 +14,11 @@ if (file.exists(data_cde_file)) {
   # const_ha_vars <- c("DWAP", "CWAM", "HWAM", "HWAH", "BWAH", "PWAM", "")
   # const_temp_vars <- c("TMAXA", "TMINA")
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
+}
+
+crop_cde_file <- "crop_codes.csv"
+if (file.exists(crop_cde_file)) {
+  crop_dic <- data.table::fread(crop_cde_file)
 }
 
 predefined_vars <- c("PRODUCTION", "TIMESTAMP")
@@ -31,6 +38,12 @@ p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for statistics: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will be ", paste(default_factors, collapse = ",")))
 p <- argparser::add_argument(p, "--factors_agg", short="-c", nargs=Inf, help=paste0("Factor names for aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "], by default will use factors for statistics plus HYEAR"))
 p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
+p <- argparser::add_argument(p, "--boxplot", short="-b", flag=TRUE, help="Generate boxplot for aggregation result")
+p <- argparser::add_argument(p, "--boxplot_baseline_file", short="-l", nargs=1, help="The file name of baseline data")
+p <- argparser::add_argument(p, "--boxplot_scenario_file", short="-s", nargs=1, help="The file name of scenario data")
+p <- argparser::add_argument(p, "--boxplot_x", short="-p", nargs=1, help="The variable used for x-axis, the default will be the first item of factors")
+p <- argparser::add_argument(p, "--boxplot_group_factors", short="-r", nargs=Inf, help="The factors used for subset the data for plotting graphs")
+p <- argparser::add_argument(p, "--boxplot_max_bar_num", short="-n", default = 25, help = "Maximum number of box bar per graph")
 argv <- argparser::parse_args(p)
 
 # for test only
@@ -45,6 +58,8 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "test\\data\\case10\\agg_pp_GGCMI_Maize_ir2_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1"))
 # argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0.csv", "test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1", "HYEAR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result2\\report13_0.csv", "-a", "HWAH", "-f","ADMLV0", "FILE", "-b", "-p", "FILE", "-r", "ADMLV0", "-l", "pp_GHA_CC_FCT_GHMZ_rf_0N_CC", "-s", "pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result4\\report13_1.csv", "-a", "HWAH", "-f","ADMLV1", "FILE", "-b", "-p", "FILE", "-r", "ADMLV1", "-l", "pp_GHA_CC_FCT_GHMZ_rf_0N_CC", "-s", "pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -65,14 +80,32 @@ suppressWarnings(if (is.na(factors)) {
 })
 aggFactors <- argv$factors_agg
 suppressWarnings(if (is.na(aggFactors)) {
-  aggFactors <- c(factors, "HYEAR")
+  aggFactors <- c(factors, "HYEAR", "CR")
 })
+if ("ADMLV1" %in% aggFactors && !"ADMLV0" %in% aggFactors) {
+  aggFactors <- c("ADMLV0", aggFactors)
+  if ("ADMLV1" %in% plotFactors && !"ADMLV0" %in% plotFactors) {
+    plotFactors <- c("ADMLV0", plotFactors)
+  }
+}
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
   stop(sprintf("%s does not exist.", in_dir))
 }
 
 out_dir <- dirname(out_file)
+
+boxplotFlg <- argv$boxplot
+if (boxplotFlg) {
+  boxplotX <- argv$boxplot_x
+  suppressWarnings(if (is.na(boxplotX)) {
+    boxplotX <- factors[1]
+  })
+  maxBarNum <- argv$boxplot_max_bar_num
+  plotFactors <- argv$boxplot_group_factors
+  plotBaselineFile <- tools::file_path_sans_ext(basename(argv$boxplot_baseline_file))
+  plotScenarioFile <- tools::file_path_sans_ext(basename(argv$boxplot_scenario_file))
+}
 
 if (!dir.exists(out_dir)) {
   dir.create(out_dir, recursive = TRUE)
@@ -123,13 +156,23 @@ if (!argv$is_aggregated) {
   } else {
     flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
   }
-  for(f in flist) {
-    dts <- c(dts, list(data.table::fread(f)))
+  if (boxplotFlg && ("FILE" == boxplotX || "FILE" %in% plotFactors)) {
+    for(f in flist) {
+      rawData <- data.table::fread(f)
+      if (var_dic[name=="FILE", factor] %in% colnames(rawData)) {
+        rawData[,file := tools::file_path_sans_ext(basename(f))]
+      }
+      dts <- c(dts, list(rawData))
+    }
+  } else {
+    for(f in flist) {
+      dts <- c(dts, list(data.table::fread(f)))
+    }
   }
+  
   df <- data.table::rbindlist(dts)
 }
 valid_entries <- df
-# colNames <- colnames(valid_entries)
 
 print("Starting statistics.")
 final <- valid_entries[,.(Var = predefined_percentiles), by = c(var_dic[name %in% factors, factor])]
@@ -180,5 +223,111 @@ suppressWarnings(if (!is.na(totTonVariables)) {
 final[,Var:=paste0(Var, "PCT")][Var == "0PCT", Var := "MIN"][Var == "100PCT", Var := "MAX"]
 
 data.table::fwrite(final, file = out_file)
+
+if (boxplotFlg) {
+  
+  if (!is.na(plotBaselineFile) && !is.na(plotScenarioFile)) {
+    final2 <- valid_entries[file %in% c(plotBaselineFile, plotScenarioFile)]
+    final2[file==plotBaselineFile, file:="Baseline"]
+    final2[file==plotScenarioFile, file:="Scenario"]
+  } else {
+    final2 <- valid_entries
+  }
+  
+  
+  base_file_name <- tools::file_path_sans_ext(basename(out_file))
+  extension <- "png"
+  xLaxAngel <- 90
+  
+  finalColNames <- colnames(final2)
+  plotYVars <- finalColNames[!finalColNames %in% var_dic[name%in%aggFactors,factor]]
+  plotXVarHeader <- var_dic[name == boxplotX, factor]
+  ## plotFactors <- factors[factors != boxplotX]
+  # if ("ADMLV0" %in% plotFactors && "ADMLV1" %in% plotFactors) {
+  #   plotFactorGroups <- list(plotFactors, plotFactors[!plotFactors%in%"ADMLV1"])
+  # } else {
+  #   plotFactorGroups <- list(plotFactors)
+  # }
+  # for (plotFactorGroup in plotFactorGroups) {
+  #   plotFactorHeaders <- var_dic[name%in%plotFactorGroup,factor]
+    
+  # }
+  plotFactorHeaders <- var_dic[name%in%plotFactors,factor]
+  plotDatas <- split(final2, by=plotFactorHeaders, keep.by=FALSE, collapse="__")
+  plotKeys <- names(plotDatas)
+  
+  for (variable in plotYVars) {
+    for (key in plotKeys) {
+      plotData <- plotDatas[key][[1]]
+      rows <- unique(plotData[,c(..plotXVarHeader), ])[order(get(plotXVarHeader))]
+      rows[,factor_id:=1:rows[,.N]]
+      plotData <- merge(plotData, rows, by=c(plotXVarHeader), all=T)
+      factorlist <- rows
+      setcolorder(factorlist, c("factor_id", plotXVarHeader))
+      
+      factorNum <- factorlist[,.N]
+      if (class(plotData[,get(plotXVarHeader)]) != "character") {
+        plotData[,(plotXVarHeader):=as.character(get(plotXVarHeader))]
+      }
+      
+      # Title rule: factors list, crop name, variable name (e.g. average yield)
+      crop <- crop_dic[DSSAT_code==plotData[,get(var_dic[name=="CR", factor])][1], Common_name]
+      if (var_dic[average==variable, .N] > 0) {
+        plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("average ", var_dic[average==variable, boxplot]), sep=", ")
+        variableInFile <- paste0("average_", var_dic[average==variable, boxplot])
+      } else if (var_dic[total==variable, .N] > 0) {
+        plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total==variable, boxplot]), sep=", ")
+        variableInFile <- paste0("total_", var_dic[average==variable, boxplot])
+      # } else if (var_dic[total_ton==variable, N] > 0) {
+      #   plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
+      } else {
+        plotTitle <- paste(str_replace_all(key, "__", ", "), crop, variable, sep=", ")
+        variableInFile <- variable
+      }
+      
+      for (i in 1:ceiling(factorNum/maxBarNum)) {
+        
+        df <- plotData[factor_id %in% (1 + (i-1) * maxBarNum) : (i*maxBarNum)]
+        
+        plot <- ggplot(data = df, aes(x = get(plotXVarHeader), y = get(variable))) +
+          geom_boxplot(
+            # aes(fill = HWAH),
+            outlier.colour = NA,
+            color = "darkgrey"
+          )  +
+          stat_boxplot(geom ='errorbar')+
+          geom_boxplot()+
+          
+          coord_cartesian(ylim = range(final2[,..variable])) +
+          # theme_light() +
+          theme(legend.text = element_text(size = 13),
+                legend.title = element_text(size = 13)) +
+          # theme(axis.text = element_text(size = 13)) +
+          theme(axis.title = element_text(size = 13, face = "bold")) +
+          labs(x = boxplotX, y = variableInFile, colour = "Legend", title = plotTitle) +
+          theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
+          theme(panel.grid.minor = element_blank()) +
+          theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
+          theme(plot.title = element_text(size=20, face="bold", hjust = 0.5))
+        
+        # scale_fill_manual(values=colors)
+        
+        if (ceiling(factorNum/maxBarNum) == 1) {
+          file_name <- paste0(variableInFile, "-", str_replace(key, "\\.", "__"), ".", extension)
+        } else {
+          file_name <- paste0(variableInFile, "-", str_replace(key, "\\.", "__"), "_", i, ".", extension)
+        }
+        
+        ggsave(
+          plot,
+          filename = file_name,
+          # plot = last_plot(),
+          path = out_dir
+        )
+      }
+      
+    }
+  }
+}
 
 print("Complete.")

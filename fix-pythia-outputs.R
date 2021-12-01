@@ -162,7 +162,7 @@ for(f in flist) {
     valid_entries <- merge(pixels[,.(LATITUDE,LONGITUDE,ADMLV0,ADMLV1,ADMLVP=portion)], valid_entries, by=c("LATITUDE","LONGITUDE"), all=T, allow.cartesian=TRUE, allow.by=.EACHI)
     
     # update harvest area based on portion
-    valid_entries[,HARVEST_AREA = HARVEST_AREA * ADMLVP]
+    valid_entries[,HARVEST_AREA := HARVEST_AREA * ADMLVP]
     
     # Clear cache
     gadmShape <- NULL
