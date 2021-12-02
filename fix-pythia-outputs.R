@@ -58,6 +58,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case1", "-o", "test\\data\\case1", "-a"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "-o", "-g", "6"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg", "-o", "-g", "6"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17", "-o", "-g", "6"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -137,7 +138,7 @@ for(f in flist) {
     cat("Caculating Admin Levels ...")
     
     # Use GADM whole world shape file to query the country and region names
-    gadmShape <- shapefile("gadm_shapes/gadm36_1.shp")
+    gadmShape <- shapefile(file.path("gadm_shapes", "gadm36_1.shp"))
     
     # proj4str <- CRS(proj4string(gadmShape))
     proj4str <- CRS("+init=epsg:4326")
