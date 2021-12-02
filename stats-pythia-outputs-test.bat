@@ -1,3 +1,3 @@
-Rscript stats-pythia-outputs.R test\data\case13 test\data\case13\result3\report13_0.csv -a HWAH -f ADMLV0 FILE -b -p FILE -r ADMLV0 -l pp_GHA_CC_FCT_GHMZ_rf_0N_CC -s pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv
-Rscript stats-pythia-outputs.R test\data\case13 test\data\case13\result3\report13_1.csv -a HWAH -f ADMLV1 FILE -b -p FILE -r ADMLV1 -l pp_GHA_CC_FCT_GHMZ_rf_0N_CC -s pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv
+Rscript stats-pythia-outputs.R test\data\case17\\base test\data\case17\agg_result\agg_yield_base_adm1.csv -a HWAH -f ADMLV1
+Rscript stats-pythia-outputs.R test\data\case17\\scenario test\data\case17\agg_result\\agg_yield_scenario_adm1.csv  -a HWAH -f ADMLV1
 pause
