@@ -1,0 +1,2 @@
+Rscript statplot-pythia-outputs.R test\\data\\case17\\agg_result\\agg_crop_per_person_base_adm1.csv test\\data\\case17\\agg_result\\agg_crop_per_person_scenario_adm1.csv test\\data\\case17\\boxplot2 -f ADMLV1
+pause
