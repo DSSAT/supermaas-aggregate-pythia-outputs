@@ -9,6 +9,7 @@ POPULATION,number,0,,,,,,,
 FILE,text,,,file,,,,,
 PYEAR,year,,,,,,,,
 HYEAR,year,,,year,,,,,
+HMONTH,month,,,month,,,,,
 GSD,day,49,269,,,GSD_AVE,,,growing season
 ETFD,day,0,,,,ETFD_AVE,,,
 FTHD,day,0,,,,FTHD_AVE,,,
@@ -30,7 +31,7 @@ PDAT,date,,,,,PDAT_AVE,,,planting date
 EDAT,date,,,,,EDAT_AVE,,,EDAT
 ADAT,date,,,,,ADAT_AVE,,,ADAT
 MDAT,date,,,,,MDAT_AVE,,,MDAT
-HDAT,date,,,,,HDAT_AVE,,,harvest date
+HDAT,date,,,date,,HDAT_AVE,,,harvest date
 DWAP,kg/ha,0,,,DWAP_TOT,DWAP_AVE,,,DWAP
 CWAM,kg/ha,0,,,CWAM_TOT,CWAM_AVE,BIOMASS_PRODUCTION,,biomass
 HWAM,kg/ha,0,,,HWAM_TOT,HWAM_AVE,,,HWAM
