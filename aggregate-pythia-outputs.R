@@ -14,7 +14,7 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
-predefined_vars <- c("PRODUCTION", "TIMESTAMP", "CROP_PER_PERSON")
+predefined_vars <- c("PRODUCTION", "TIMESTAMP", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA")
 default_factors <- c("LATITUDE", "LONGITUDE", "HYEAR")
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
@@ -26,6 +26,7 @@ p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0(
 p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
+p <- argparser::add_argument(p, "--crop_failure_threshold", short="-c", default = 100, nargs=Inf, help="Threshold to determine if the crop is failure")
 # p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -44,8 +45,9 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case11\\pp_GGCMI_SWH_SWheat_rf.csv", "test\\data\\case11\\agg_pp_GGCMI_SWH_SWheat_rf_country.csv", "-a", "PRCP", "HWAH", "-f","ADMLV0"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0.csv", "test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1", "HYEAR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result2_mid\\report13_0.csv", "-a", "HWAH", "-f","ADMLV0", "FILE", "HYEAR"))
-# argv <- argparser::parse_args(p, c("test\\data\\case17\\base", "test\\data\\case17\\agg_result\\agg_crop_per_person_base.csv", "-v", "CROP_PER_PERSON", "-f","ADMLV1", "HYEAR"))
-# argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_scenario.csv", "-v", "CROP_PER_PERSON", "-f","ADMLV1", "HYEAR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17\\base", "test\\data\\case17\\agg_result\\agg_crop_per_person_base_adm1.csv", "-v", "CROP_PER_PERSON", "-f","ADMLV1", "HYEAR", "CR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_drop_scenario_adm1.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","ADMLV1", "HYEAR", "CR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_drop_scenario_pixel.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","LONGITUDE", "LATITUDE", "HYEAR", "CR"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -64,6 +66,8 @@ factors <- argv$factor
 suppressWarnings(if (is.na(factors)) {
   factors <- default_factors
 })
+cfThreshold <- argv$crop_failure_threshold
+
 # argv$period_annual <- TRUE
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
@@ -108,6 +112,9 @@ if ("HWAH" %in% colNames) {
 
 if (!"HYEAR" %in% colNames) {
   valid_entries[,`:=`(HYEAR = trunc(HDAT/1000))]
+}
+if (!"HMONTH" %in% colNames) {
+  valid_entries[,HMONTH:=format(as.Date(paste0(HDAT), "%Y%j"), "%m")]
 }
 if (!"PYEAR" %in% colNames) {
   valid_entries[,`:=`(PYEAR = trunc(PDAT/1000))]
@@ -228,9 +235,23 @@ suppressWarnings(if (!is.na(variables)) {
         aggregated[, (variable):= calc_production[,sum(as.numeric(get(variable))), by = factors][,V1]]
         final[, production := aggregated[,round(get(variable)/1000)]]
       } else if (variable == "CROP_PER_PERSON") {
-        calc_production[,(variable) := HARVEST_AREA * HWAH]
-        aggregated[, (variable):= calc_production[,sum(as.numeric(get(variable)))/sum(POPULATION), by = factors][,V1]]
-        final[, crop_per_person := aggregated[,round(get(variable))]]
+        if (!"PRODUCTION" %in% colnames(calc_production)) {
+          calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
+        }
+        aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum(POPULATION), by = factors][,V1]]
+        final[, crop_per_person := aggregated[,round(get(variable), 1)]]
+      } else if (variable == "CROP_PER_DROP") {
+        if (!"PRODUCTION" %in% colnames(calc_production)) {
+          calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
+        }
+        aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = factors][,V1]]
+        final[, crop_per_drop := aggregated[,round(get(variable), 2)]]
+      } else if (variable == "CROP_FAILURE_AREA") {
+        cfThreshold<-1000
+        calc_production[HWAH < cfThreshold, (variable) := HARVEST_AREA]
+        calc_production[HWAH >= cfThreshold, (variable) := 0]
+        aggregated[, (variable):= calc_production[,mean(get(variable)), by = factors][,V1]]
+        final[, crop_failure_area := aggregated[,round(get(variable), 2)]]
       }
     } else {
       print(paste("Processing",  variable, ", which is unsupported and skipped"))
