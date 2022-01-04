@@ -121,6 +121,9 @@ colNames <- colnames(df)
 if (!"HYEAR" %in% colNames) {
   df[,`:=`(HYEAR = trunc(HDAT/1000))]
 }
+if (!"HMONTH" %in% colNames) {
+  df[,HMONTH:=format(as.Date(paste0(HDAT), "%Y%j"), "%m")]
+}
 if (!"PYEAR" %in% colNames) {
   df[,`:=`(PYEAR = trunc(PDAT/1000))]
 }

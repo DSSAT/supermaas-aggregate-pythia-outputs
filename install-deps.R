@@ -9,6 +9,6 @@ if (!dir.exists(gadmDir)) {
   gadmZip = file.path(gadmDir, "gadm36_levels_shp.zip")
   download.file(url=gadmUrl, destfile=gadmZip)
   unzip(zipfile=gadmZip, exdir = gadmDir,
-        files=grep(unzip(zipfile=gadmZip, list=TRUE)$Name, pattern="gadm36_1.*", value=TRUE, ignore.case = TRUE))
+        files=grep(unzip(zipfile=gadmZip, list=TRUE)$Name, pattern="gadm36_*.*", value=TRUE, ignore.case = TRUE))
   file.remove(gadmZip)
 }

@@ -110,6 +110,9 @@ for(f in flist) {
   if (!"HYEAR" %in% colNames && ("HYEAR" %in% variables || "HYEAR" %in% factor)) {
     valid_entries[,`:=`(HYEAR = trunc(HDAT/1000))]
   }
+  if (!"HMONTH" %in% colNames) {
+    valid_entries[,HMONTH:=format(as.Date(paste0(HDAT), "%Y%j"), "%m")]
+  }
   if (!"PYEAR" %in% colNames && "PYEAR" %in% variables) {
     valid_entries[,`:=`(PYEAR = trunc(PDAT/1000))]
   }
