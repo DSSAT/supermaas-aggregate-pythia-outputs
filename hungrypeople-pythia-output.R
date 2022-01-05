@@ -136,21 +136,23 @@ forecastLowHarvest[, PIXEL_LOW_HARVEST_AREA := sum(HARVEST_AREA), by = factors_p
 forecastLowHarvest[, HUNGRY_PEOPLE := POPULATION * PIXEL_LOW_HARVEST_AREA/ PIXEL_TOTAL_HARVEST_AREA]
 
 # Aggregate the HungryPeoplei,n to Admin levels 0 for each year
-final_ADMLV0 <- forecastLowHarvest[,.(HUNGRY_PEOPLE = sum(HUNGRY_PEOPLE)), by = .(ADMLV0, HYEAR)][order(ADMLV0, HYEAR)]
+final_ADMLV0 <- forecastLowHarvest[,.(HUNGRY_PEOPLE = sum(HUNGRY_PEOPLE)), by = .(ADMLV0, HYEAR)]
 if (!ignore_zero_flg) {
   final_ADMLV0 <- merge(final_ADMLV0, unique(forecast[,.(ADMLV0, HYEAR)]), by = c("ADMLV0", "HYEAR"), all = T, sort = F)
   final_ADMLV0[is.na(HUNGRY_PEOPLE), HUNGRY_PEOPLE := 0]
 }
+final_ADMLV0 <- final_ADMLV0[order(ADMLV0, HYEAR)]
 setnames(final_ADMLV0, "HYEAR", var_dic[name=="HYEAR", factor])
 setnames(final_ADMLV0, "ADMLV0", var_dic[name=="ADMLV0", factor])
 setnames(final_ADMLV0, "HUNGRY_PEOPLE", "hungry_people")
 
 # Aggregate the HungryPeoplei,n to Admin levels 0 for each year
-final_ADMLV1 <- forecastLowHarvest[,.(HUNGRY_PEOPLE = sum(HUNGRY_PEOPLE)), by = .(ADMLV0, ADMLV1, HYEAR)][order(ADMLV0, ADMLV1, HYEAR)]
+final_ADMLV1 <- forecastLowHarvest[,.(HUNGRY_PEOPLE = sum(HUNGRY_PEOPLE)), by = .(ADMLV0, ADMLV1, HYEAR)]
 if (!ignore_zero_flg) {
   final_ADMLV1 <- merge(final_ADMLV1, unique(forecast[,.(ADMLV0, ADMLV1, HYEAR)]), by = c("ADMLV0", "ADMLV1", "HYEAR"), all = T, sort = F)
   final_ADMLV1[is.na(HUNGRY_PEOPLE), HUNGRY_PEOPLE := 0]
 }
+final_ADMLV1 <- final_ADMLV1[order(ADMLV0, ADMLV1, HYEAR)]
 setnames(final_ADMLV1, "HYEAR", var_dic[name=="HYEAR", factor])
 setnames(final_ADMLV1, "ADMLV0", var_dic[name=="ADMLV0", factor])
 setnames(final_ADMLV1, "ADMLV1", var_dic[name=="ADMLV1", factor])
