@@ -36,6 +36,7 @@ argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\agg_result\\agg_crop_per_person_base_adm1.csv", "test\\data\\case17\\agg_result\\agg_crop_per_person_scenario_adm1.csv", "test\\data\\case17\\boxplot", "-f", "ADMLV1"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\baseline\\analysis_out\\stage_7_admlv0.csv", "test\\data\\case18\\scenario\\analysis_out\\stage_7_admlv0.csv", "test\\data\\case18\\debug", "-f", "ADMLV0"))
 
 suppressWarnings(in_dir_base <- normalizePath(argv$input_base))
 suppressWarnings(in_dir_scenario <- normalizePath(argv$input_scenario))
@@ -101,7 +102,12 @@ for (variable in variables) {
     }
     
     # Title rule: factors list, crop name, variable name (e.g. average yield)
-    crop <- crop_dic[DSSAT_code==plotData[,get(var_dic[name=="CR", factor])][1], Common_name]
+    if (var_dic[name=="CR", factor] %in% colnames(plotData)) {
+      crop <- crop_dic[DSSAT_code==plotData[,get(var_dic[name=="CR", factor])][1], Common_name]
+    } else {
+      crop <- "crop"
+    }
+    
     if (var_dic[average==variable, .N] > 0) {
       plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("average ", var_dic[average==variable, boxplot]), sep=", ")
       variableInFile <- paste0("average_", var_dic[average==variable, boxplot])
