@@ -67,7 +67,7 @@ df <- data.table::rbindlist(list(df_base, df_scenario))
 
 if (is.na(factors)) {
   headers <- colnames(df)
-  plotFactorHeaders <- headers[headers %in% var_dic[factor != "", factor]]
+  plotFactorHeaders <- headers[headers %in% var_dic[factor != "" & factor != "file", factor]]
 } else {
   if ("ADMLV1" %in% factors && !"ADMLV0" %in% factors) {
     factors <- c("ADMLV0", factors)
