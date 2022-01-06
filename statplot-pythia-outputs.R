@@ -29,7 +29,7 @@ p <- argparser::add_argument(p, "input_base", "Aggregation result file for basel
 p <- argparser::add_argument(p, "input_scenario", "Aggregation result file for scenario data")
 p <- argparser::add_argument(p, "output", "folder Path to generaete box plot graphs")
 p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable HEADER names for comparison, if not given, then comparing all non-factor columns"))
-p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor!="", factor]), collapse=","), "]"))
+p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "" & factor != "file", factor]), collapse=","), "]"))
 # p <- argparser::add_argument(p, "--max_bar_num", short="-n", default = 25, help = "Maximum number of box bar per graph")
 
 argv <- argparser::parse_args(p)
