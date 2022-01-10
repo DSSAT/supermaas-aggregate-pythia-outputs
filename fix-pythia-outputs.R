@@ -51,7 +51,7 @@ resolveGeoPortion <- function (gadmShape, pixels, longDiff, latDiff, gridNum, ma
   pixelsXs[,portion := cnt / total][,cnt := NULL][,total := NULL]
   setnames(pixelsXs, "LONGITUDE_ORG", "LONGITUDE")
   setnames(pixelsXs, "LATITUDE_ORG", "LATITUDE")
-  pixels <- merge(pixels, pixelsXs, by=c("LONGITUDE", "LATITUDE"), all=T)
+  pixels <- merge(pixels, pixelsXs, by=c("LONGITUDE", "LATITUDE"), all=T, sort=F)
   return (pixels)
 }
 
@@ -61,13 +61,15 @@ p <- argparser::add_argument(p, "--keep_original", short="-o", flag = TRUE, help
 p <- argparser::add_argument(p, "--skip_admlvl", short="-a", flag = TRUE, help=paste0("Skip the calculation for admin level"))
 p <- argparser::add_argument(p, "--grid_num", short="-g", default = 5, help=paste0("Provide the number to divide current pixel into smaller grid to calculate the portion of admin level, and provide 1 to skip the calculation"))
 p <- argparser::add_argument(p, "--max_adm_level", short="-l", default = 1, help=paste0("Provide the maximum admin level you want to reach, the higher level will consume more time to finish"))
+p <- argparser::add_argument(p, "--filter_variable", short="-v", nargs = 1, help=paste0("Provide the name of variable used for filter the final output"))
+p <- argparser::add_argument(p, "--filter_values", short="-u", nargs = Inf, help=paste0("Provide the values of variable used for filter the final output"))
 argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case1", "-o", "test\\data\\case1", "-a"))
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "-o", "-g", "6"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg", "-o", "-g", "6"))
-# argv <- argparser::parse_args(p, c("test\\data\\case17\\base", "-o", "-g", "6", "-l", "2"))
+# argv <- argparser::parse_args(p, c("test\\data\\case16", "-o", "-g", "6", "-l", "2", "-v", "ADMLV0"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -75,6 +77,8 @@ isKeepOriginal <- argv$keep_original
 isSkipAdmlvl <- argv$skip_admlvl
 gridNum <- argv$grid_num
 maxAdmLv <- argv$max_adm_level
+fltVar <- argv$filter_variable
+fltValues <- argv$filter_values
 
 admVars <- paste0("ADMLV", 0:maxAdmLv)
 
@@ -106,12 +110,6 @@ if (!dir.exists(in_dir)) {
 for(f in flist) {
   cat(paste0("Processing ", f, "\n"))
   valid_entries <- data.table::fread(f)
-  
-  if (isKeepOriginal) {
-    cat("Create backup ...")
-    file.rename(f, file.path(backupDir, basename(f)))
-    cat("done\n")
-  }
   
   colNames <- colnames(valid_entries)
   if (!"HYEAR" %in% colNames) {
@@ -177,16 +175,20 @@ for(f in flist) {
     # Create factor column for aggregations
     pixels[, LONGITUDE_ORG := NULL][, LATITUDE_ORG := NULL]
     setnames(pixels, "portion", "ADMLVP")
-    if ("ADMLVP" %in% colNames) {
-      valid_entries[,ADMLVP := NULL]
-    }
+    
     for (admVar in admVars) {
       if (admVar %in% colNames) {
         valid_entries[, (admVar) := NULL]
       }
     }
+    if ("ADMLVP" %in% colNames) {
+      valid_entries[,HARVEST_AREA := round(HARVEST_AREA/ADMLVP, digit = 1)]
+      valid_entries[,ADMLVP := NULL]
+      valid_entries[,HYEAR:=NULL][,HMONTH:=NULL][,PYEAR:=NULL][,GSD:=NULL]
+      valid_entries <- unique(valid_entries)
+    }
     
-    valid_entries <- merge(pixels, valid_entries, by=c("LATITUDE","LONGITUDE"), all=T, allow.cartesian=TRUE, allow.by=.EACHI)
+    valid_entries <- merge(pixels, valid_entries, by=c("LATITUDE","LONGITUDE"), all=T, allow.cartesian=TRUE, allow.by=.EACHI, sort = F)
     
     # update harvest area based on portion
     valid_entries[,HARVEST_AREA := HARVEST_AREA * ADMLVP]
@@ -196,6 +198,20 @@ for(f in flist) {
     pixels <- NULL
     pixelsSP <- NULL
     indices <- NULL
+    cat("done\n")
+  }
+  
+  if (!is.na(fltVar)) {
+    if (is.na(fltValues)) {
+      fltValues <- valid_entries[,.N, by = fltVar][N==max(N), get(fltVar)]
+    }
+
+    valid_entries <- valid_entries[get(fltVar) %in% fltValues]
+  }
+  
+  if (isKeepOriginal) {
+    cat("Create backup ...")
+    file.rename(f, file.path(backupDir, basename(f)))
     cat("done\n")
   }
   
