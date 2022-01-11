@@ -79,6 +79,7 @@ gridNum <- argv$grid_num
 maxAdmLv <- argv$max_adm_level
 fltVar <- argv$filter_variable
 fltValues <- argv$filter_values
+gadmShape <- NA
 
 admVars <- paste0("ADMLV", 0:maxAdmLv)
 
@@ -151,7 +152,9 @@ for(f in flist) {
     cat("Caculating Admin Levels ...")
     
     # Use GADM whole world shape file to query the country and region names
-    gadmShape <- shapefile(file.path("gadm_shapes", paste0("gadm36_", maxAdmLv, ".shp")))
+    if (is.na(gadmShape)) {
+      gadmShape <- shapefile(file.path("gadm_shapes", paste0("gadm36_", maxAdmLv, ".shp")))
+    }
     
     # proj4str <- CRS(proj4string(gadmShape))
     proj4str <- CRS("+init=epsg:4326")
@@ -194,10 +197,7 @@ for(f in flist) {
     valid_entries[,HARVEST_AREA := HARVEST_AREA * ADMLVP]
     
     # Clear cache
-    gadmShape <- NULL
-    pixels <- NULL
-    pixelsSP <- NULL
-    indices <- NULL
+    # pixels <- NULL
     cat("done\n")
   }
   
