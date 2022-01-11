@@ -70,6 +70,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "-o", "-g", "6"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg", "-o", "-g", "6"))
 # argv <- argparser::parse_args(p, c("test\\data\\case16", "-o", "-g", "6", "-l", "2", "-v", "ADMLV0"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\baseline\\pythia_out", "-o", "-g", "6", "-l", "2"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -185,7 +186,10 @@ for(f in flist) {
       }
     }
     if ("ADMLVP" %in% colNames) {
-      valid_entries[,HARVEST_AREA := round(HARVEST_AREA/ADMLVP, digit = 1)]
+      valid_entries[,HARVEST_AREA := round(HARVEST_AREA/ADMLVP, digit = 2)]
+      if ("POPULATION" %in% colNames) {
+        valid_entries[,POPULATION := round(POPULATION/ADMLVP, digit = 2)]
+      }
       valid_entries[,ADMLVP := NULL]
       valid_entries[,HYEAR:=NULL][,HMONTH:=NULL][,PYEAR:=NULL][,GSD:=NULL]
       valid_entries <- unique(valid_entries)
@@ -195,6 +199,10 @@ for(f in flist) {
     
     # update harvest area based on portion
     valid_entries[,HARVEST_AREA := HARVEST_AREA * ADMLVP]
+    # update population based on portion
+    if ("POPULATION" %in% colnames) {
+      valid_entries[,POPULATION := POPULATION * ADMLVP]
+    }
     
     # Clear cache
     # pixels <- NULL
