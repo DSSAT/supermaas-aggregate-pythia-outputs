@@ -153,9 +153,9 @@ for(f in flist) {
     cat("Caculating Admin Levels ...")
     
     # Use GADM whole world shape file to query the country and region names
-    if (is.na(gadmShape)) {
+    suppressWarnings(if (is.na(gadmShape)) {
       gadmShape <- shapefile(file.path("gadm_shapes", paste0("gadm36_", maxAdmLv, ".shp")))
-    }
+    })
     
     # proj4str <- CRS(proj4string(gadmShape))
     proj4str <- CRS("+init=epsg:4326")
@@ -200,7 +200,7 @@ for(f in flist) {
     # update harvest area based on portion
     valid_entries[,HARVEST_AREA := HARVEST_AREA * ADMLVP]
     # update population based on portion
-    if ("POPULATION" %in% colnames) {
+    if ("POPULATION" %in% colNames) {
       valid_entries[,POPULATION := POPULATION * ADMLVP]
     }
     
