@@ -212,7 +212,7 @@ calc_production <- valid_entries
 # aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA*ADMLVP)),by = factors]
 calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
 if ("POPULATION" %in% colNames) {
-  calc_production[,POPULATION_FCT := POPULATION * HARVEST_AREA / sum(HARVEST_AREA), by = factors]
+  calc_production[,POPULATION_FCT := POPULATION / ADMLVP * HARVEST_AREA / sum(HARVEST_AREA), by = .(LATITUDE, LONGITUDE, HYEAR)]
 }
 
 aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
