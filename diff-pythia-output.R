@@ -69,7 +69,9 @@ if (is.na(variables)) {
 print("Comparing files for relative difference comparison")
 diff <- merge(df_base, df_scenario, by = factors)
 for (variable in variables) {
+  print(paste0("processing ", variable))
   diff[,(paste0("DIFF_", variable)) := (get(paste0(variable, ".y")) - get(paste0(variable, ".x")))/get(paste0(variable, ".x")) * 100]
+  diff[get(paste0(variable, ".y")) == get(paste0(variable, ".x")),(paste0("DIFF_", variable)) := 0]
   diff[,(paste0(variable, ".x")):= NULL]
   diff[,(paste0(variable, ".y")):= NULL]
 }
