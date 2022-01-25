@@ -68,8 +68,11 @@ suppressWarnings(if (is.na(factors)) {
   headers <- colnames(df)
   plotFactorHeaders <- headers[headers %in% var_dic[factor != "", factor]]
 } else {
-  if ("ADMLV1" %in% factors && !"ADMLV0" %in% factors) {
-    factors <- c("ADMLV0", factors)
+  if ("ADMLV1" %in% factors) {
+    factors <- unique(c("ADMLV0", factors))
+  }
+  if ("ADMLV2" %in% factors) {
+    factors <- unique(c("ADMLV0", "ADMLV1", factors))
   }
   plotFactorHeaders <- var_dic[name %in% factors, factor]
 })

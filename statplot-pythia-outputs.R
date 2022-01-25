@@ -69,8 +69,11 @@ if (is.na(factors)) {
   headers <- colnames(df)
   plotFactorHeaders <- headers[headers %in% var_dic[factor != "" & factor != "file", factor]]
 } else {
-  if ("ADMLV1" %in% factors && !"ADMLV0" %in% factors) {
-    factors <- c("ADMLV0", factors)
+  if ("ADMLV1" %in% factors) {
+    factors <- unique(c("ADMLV0", factors))
+  }
+  if ("ADMLV2" %in% factors) {
+    factors <- unique(c("ADMLV0", "ADMLV1", factors))
   }
   plotFactorHeaders <- var_dic[name %in% factors, factor]
 }
@@ -89,6 +92,7 @@ plotKeys <- names(plotDatas)
 
 for (variable in variables) {
   for (key in plotKeys) {
+    print(paste0("Processing ", variable, " for ", key))
     plotData <- plotDatas[key][[1]]
     rows <- unique(plotData[,c(..plotXVarHeader), ])[order(get(plotXVarHeader))]
     rows[,factor_id:=1:rows[,.N]]

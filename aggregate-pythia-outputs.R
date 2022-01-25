@@ -133,8 +133,11 @@ if (!"HARVEST_AREA" %in% colNames) {
   valid_entries[,`:=`(HARVEST_AREA = 1)]
 }
 
-if ("ADMLV1" %in% factors && !"ADMLV0" %in% factors) {
-  factors <- c(factors, "ADMLV0")
+if ("ADMLV1" %in% factors) {
+  factors <- unique(c("ADMLV0", factors))
+}
+if ("ADMLV2" %in% factors) {
+  factors <- unique(c("ADMLV0", "ADMLV1", factors))
 }
 if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) || 
     !"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
