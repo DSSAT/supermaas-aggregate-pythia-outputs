@@ -224,6 +224,17 @@ headers <- c()
 for (faName in factors) {
   headers <- c(headers, var_dic[name==faName, factor])
 }
+if ("ADMLV0" %in% factors) {
+  if ("ADMLV2" %in% factors) {
+    final[, admlv_info := paste(ADMLV0, ADMLV1, ADMLV2, sep = "_")]
+  } else if ("ADMLV1" %in% factors) {
+    final[, admlv_info := paste(ADMLV0, ADMLV1, sep = "_")]
+  } else {
+    final[, admlv_info := ADMLV0]
+  }
+  setcolorder(final, c("admlv_info", colnames(final)[-length(colnames(final))]))
+  headers <- c("admlv_info", headers)
+}
 setnames(final, headers)
 
 # execute predefined variable aggregation
