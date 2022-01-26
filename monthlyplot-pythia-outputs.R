@@ -113,13 +113,13 @@ for (variable in variables) {
       geom_point(data = plotData_mean, 
                  mapping = aes(x = month, y = mean),
                  color="red")+
-      geom_line(data = plotData_mean, 
-                mapping = aes(x = month, y = mean, group=1)) +
+      # geom_line(data = plotData_mean, 
+      #           mapping = aes(x = month, y = mean, group=1)) +
       
-      coord_cartesian(ylim = range(plotData[,..variable])) +
+      coord_cartesian(ylim = range(df[,..variable])) +
       # coord_cartesian(xlim = c(1,12), ylim = range(plotData[,..variable])) +
       scale_x_continuous(breaks = seq(1, 12, by = 1)) +
-      scale_y_continuous(breaks = seq(0, max(plotData[,..variable]), by = signif(max(plotData[,..variable])/10, 1))) +
+      scale_y_continuous(breaks = seq(0, max(df[,..variable]), by = signif(max(df[,..variable])/10, 1))) +
       
       # theme_light() +
       theme(legend.text = element_text(size = 13),
