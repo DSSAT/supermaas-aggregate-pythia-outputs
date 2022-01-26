@@ -55,7 +55,7 @@ if (!dir.exists(out_dir)) {
 }
 
 print("Loading aggregation result.")
-df <- data.table::fread(in_file)[,FILE := tools::file_path_sans_ext(basename(f))]
+df <- data.table::fread(in_file)[,file := tools::file_path_sans_ext(basename(in_file))]
 
 if ("date" %in% colnames(df)) {
   df[,date_md:=format(as.Date(paste0(date), "%Y%j"), "%m-%d")]
