@@ -91,7 +91,12 @@ for (variable in variables) {
     plotData <- plotDatas[key][[1]]
     plotData_mean <- plotData[,.(mean = mean(get(variable))), by = .(month)]
     
-    crop <- crop_dic[DSSAT_code==plotData[,get(var_dic[name=="CR", factor])][1], Common_name]
+    if (var_dic[name=="CR", factor] %in% colnames(plotData)) {
+      crop <- crop_dic[DSSAT_code==plotData[,get(var_dic[name=="CR", factor])][1], Common_name]
+    } else {
+      crop <- "crop"
+    }
+    
     if (var_dic[average==variable, .N] > 0) {
       plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("monthly average ", var_dic[average==variable, boxplot]), sep=", ")
       variableInFile <- paste0("monthly_average_", var_dic[average==variable, boxplot])
