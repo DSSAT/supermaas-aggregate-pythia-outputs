@@ -20,9 +20,6 @@ if (file.exists(crop_cde_file)) {
   crop_dic <- data.table::fread(crop_cde_file)
 }
 
-predefined_vars <- c("PRODUCTION")
-default_factors <- c("ADMLV0", "HYEAR")
-
 p <- argparser::arg_parser("Generate monthly boxplot based on aggregation result from Pythia outputs for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Aggregation result file which includes harvest month (HMONTH) as aggregation factor")
 p <- argparser::add_argument(p, "output", "Output directory for monthly plot")
@@ -33,18 +30,13 @@ argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\agg_result_monthly\\agg_base_monthly_production_Ghana", "test\\data\\case17\\agg_result_monthly\\", "-f","ADMLV0"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test\\baseline\\analysis_out\\stage_14_admlv1.csv", "test\\data\\case18\\test\\baseline\\analysis_out\\images", "-f","ADMLV1"))
 
 suppressWarnings(in_file <- normalizePath(argv$input))
 suppressWarnings(out_dir <- normalizePath(argv$output))
 
 variables <- argv$variables
-suppressWarnings(if (is.na(variables)) {
-  variables <- predefined_vars
-})
 factors <- argv$factors
-suppressWarnings(if (is.na(factors)) {
-  factors <- default_factors
-})
 
 if (!dir.exists(in_file) && !file.exists(in_file)) {
   stop(sprintf("%s does not exist.", in_file))
@@ -76,7 +68,7 @@ suppressWarnings(if (is.na(factors)) {
 
 suppressWarnings(if (is.na(variables)) {
   headers <- colnames(df)
-   <- headers[!headers %in% var_dic[factor != "", factor]]
+  variables <- headers[!headers %in% var_dic[factor != "", factor]]
 })
 
 print("Generating boxplot graphs...")
@@ -87,7 +79,7 @@ plotKeys <- names(plotDatas)
 
 for (variable in variables) {
   for (key in plotKeys) {
-    
+    print(paste0("Processing ", variable, " for ", key))
     plotData <- plotDatas[key][[1]]
     plotData_mean <- plotData[,.(mean = mean(get(variable))), by = .(month)]
     

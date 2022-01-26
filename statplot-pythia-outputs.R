@@ -20,8 +20,6 @@ if (file.exists(crop_cde_file)) {
   crop_dic <- data.table::fread(crop_cde_file)
 }
 
-# predefined_vars <- c("PRODUCTION")
-predefined_vars <- c("HWAH")
 plotXVarHeader <- var_dic[name == "FILE", factor]
 
 p <- argparser::arg_parser("Generate statistics boxplot based on two aggregation results from Pythia outputs for World Modelers(fixed)")
