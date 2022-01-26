@@ -25,7 +25,7 @@ p <- argparser::add_argument(p, "--total", short="-t", nargs=Inf, help=paste0("V
 p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0("Variable names for average aggregation: [", paste(var_dic[average!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "]"))
-p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
+# p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
 p <- argparser::add_argument(p, "--crop_failure_threshold", short="-c", default = 100, nargs=Inf, help="Threshold to determine if the crop is failure, (kg/ha)")
 # p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
@@ -52,9 +52,6 @@ argv <- argparser::parse_args(p)
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
-
-#in_dir <- here("work", "fen_tot0")
-#out_file <- here("work", "wmout.csv")
 
 variables <- argv$variables
 totVariables <- argv$total
@@ -133,75 +130,15 @@ if (!"HARVEST_AREA" %in% colNames) {
   valid_entries[,`:=`(HARVEST_AREA = 1)]
 }
 
-if ("ADMLV1" %in% factors) {
-  factors <- unique(c("ADMLV0", factors))
+if (T %in% (paste0("ADMLV", 0:5) %in% factors)) {
+  factors <- unique(c(paste0("ADMLV", 0:c(5:0)[match(T,paste0("ADMLV", 5:0) %in% factors)]), factors))
 }
-if ("ADMLV2" %in% factors) {
-  factors <- unique(c("ADMLV0", "ADMLV1", factors))
-}
-if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) || 
-    !"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
-  
-  # Use GADM whole world shape file to query the country and region names
-  gadmShape <- shapefile(file.path(argv$gadm_path, "gadm36_1.shp"))
 
-  # proj4str <- CRS(proj4string(gadmShape))
-  proj4str <- CRS("+init=epsg:4326")
-  pixels <- valid_entries[,.N,by=.(LONGITUDE,LATITUDE)]
-  pixels[,N:=NULL]
-  pixelsSP <- SpatialPoints(pixels[,.(LONGITUDE,LATITUDE)],  proj4string=proj4str)
-  # gridded(pixelsSP) = TRUE
-  indices <- over(pixelsSP, gadmShape)
-  pixels[,`:=`(ADMLV0=indices$NAME_0,ADMLV1=indices$NAME_1)]
+if ((!"ADMLV0" %in% colNames && "ADMLV0" %in% factors)) {
   
-  # Fix the edge pixels which might be located on the sea caused by resolution
-  pixelsFixed <- pixels[is.na(ADMLV0)]
-  incr <- 0.05 # degree increment used for finding nearby location
-  maxRetry <- 5 # maximum retry 5 times for searching the land
-  cnt <- 1
-  while (pixelsFixed[,.N] > 0 && cnt <= maxRetry) {
-    diff <- incr * cnt
-    cnt <- cnt + 1
-    pixelsFixed[,`:=`(LONGITUDE_ORG = LONGITUDE, LATITUDE_ORG = LATITUDE)]
-    pixelsXs <- NULL
-    for (i in 1 : pixelsFixed[,.N]) {
-      pixelsX <- pixelsFixed[i,.(LONGITUDE,LATITUDE,LONGITUDE_ORG,LATITUDE_ORG)]
-      
-      pixelsX <- pixelsX[,.(LONGITUDE=LONGITUDE+c(-diff,0,diff,0,-diff,diff,diff,-diff),LATITUDE=LATITUDE+c(0,diff,0,-diff,diff,diff,-diff,-diff), LONGITUDE_ORG = LONGITUDE_ORG, LATITUDE_ORG = LATITUDE_ORG  )]
-      if (is.null(pixelsXs)) {
-        pixelsXs <- pixelsX
-      } else {
-        pixelsXs <- rbind(pixelsXs, pixelsX)
-      }
-    }
-    pixelsSPXs <- SpatialPoints(pixelsXs,  proj4string=proj4str)
-    indicesXs <- over(pixelsSPXs, gadmShape)
-    pixelsXs[,`:=`(ADMLV0=indicesXs$NAME_0,ADMLV1=indicesXs$NAME_1)]
-    if (pixelsXs[!is.na(ADMLV1), .N] > 0) {
-      pixelsXsResult <- pixelsXs[!is.na(ADMLV1),.(.N, maxN=max(.N)),by=.(ADMLV0,ADMLV1,LONGITUDE_ORG,LATITUDE_ORG)][N==maxN]
-      pixelsXsResult <- unique(pixelsXsResult, by=c("LONGITUDE_ORG", "LATITUDE_ORG"))
-      pixels[paste0(LONGITUDE, "_", LATITUDE) %in% pixelsXsResult[,paste0(LONGITUDE_ORG, "_", LATITUDE_ORG)], `:=`(ADMLV0 = pixelsXsResult[,ADMLV0], ADMLV1 = pixelsXsResult[,ADMLV1])]
-      pixelsFixed <- pixels[is.na(ADMLV1)]
-    }
-  }
-  
-  # Fix incorrect country name for PRC
-  pixels[ADMLV0 %in% c("Hong Kong", "Taiwan", "Macao"), `:=`(ADMLV1 = ADMLV0, ADMLV0="China")]
-
-  # Create factor column for aggregations
-  if (!"ADMLV0" %in% colNames && "ADMLV0" %in% factors) {
-    valid_entries <- merge(valid_entries, pixels[,.(LATITUDE,LONGITUDE,ADMLV0)], by=c("LATITUDE","LONGITUDE"), all=T)
-  }
-  if (!"ADMLV1" %in% colNames && "ADMLV1" %in% factors) {
-    valid_entries <- merge(valid_entries, pixels[,.(LATITUDE,LONGITUDE,ADMLV1)], by=c("LATITUDE","LONGITUDE"), all=T)
-  }
-  
-  # Clear cache
-  gadmShape <- NULL
-  pixels <- NULL
-  pixelsSP <- NULL
-  indices <- NULL
+  stop(sprintf("admin info is not calculated yet, please run fix-pythia-output script first"))
 }
+
 if (!"ADMLVP" %in% colNames) {
   valid_entries[,`:=`(ADMLVP = 1)]
 }

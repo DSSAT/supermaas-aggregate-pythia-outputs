@@ -64,11 +64,8 @@ factors <- argv$factors
 suppressWarnings(if (is.na(factors)) {
   factors <- default_factors
 })
-if ("ADMLV1" %in% factors) {
-  factors <- unique(c("ADMLV0", factors))
-}
-if ("ADMLV2" %in% factors) {
-  factors <- unique(c("ADMLV0", "ADMLV1", factors))
+if (T %in% (paste0("ADMLV", 0:5) %in% factors)) {
+  factors <- unique(c(paste0("ADMLV", 0:c(5:0)[match(T,paste0("ADMLV", 5:0) %in% factors)]), factors))
 }
 aggFactors <- argv$factors_agg
 suppressWarnings(if (is.na(aggFactors)) {

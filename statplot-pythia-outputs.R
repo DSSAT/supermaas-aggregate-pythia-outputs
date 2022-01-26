@@ -69,11 +69,8 @@ if (is.na(factors)) {
   headers <- colnames(df)
   plotFactorHeaders <- headers[headers %in% var_dic[factor != "" & factor != "file", factor]]
 } else {
-  if ("ADMLV1" %in% factors) {
-    factors <- unique(c("ADMLV0", factors))
-  }
-  if ("ADMLV2" %in% factors) {
-    factors <- unique(c("ADMLV0", "ADMLV1", factors))
+  if (T %in% (paste0("ADMLV", 0:5) %in% factors)) {
+    factors <- unique(c(paste0("ADMLV", 0:c(5:0)[match(T,paste0("ADMLV", 5:0) %in% factors)]), factors))
   }
   plotFactorHeaders <- var_dic[name %in% factors, factor]
 }
