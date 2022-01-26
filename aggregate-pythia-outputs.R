@@ -1,7 +1,6 @@
 #library(here)
 library(argparser)
 library(data.table)
-library(raster)
 
 setwd(".")
 
@@ -14,8 +13,9 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
-predefined_vars <- c("PRODUCTION", "TIMESTAMP", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA")
+predefined_vars <- c("PRODUCTION", "TIMESTAMP", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE")
 default_factors <- c("LATITUDE", "LONGITUDE", "HYEAR")
+population_threshold <- 0.95
 
 p <- argparser::arg_parser("Aggregate Pythia outputs for World Modelers(fixed)")
 p <- argparser::add_argument(p, "input", "Pythia output directory or file to aggregate")
@@ -27,6 +27,7 @@ p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "]"))
 # p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
 p <- argparser::add_argument(p, "--crop_failure_threshold", short="-c", default = 100, nargs=Inf, help="Threshold to determine if the crop is failure, (kg/ha)")
+p <- argparser::add_argument(p, "--low_production_per_person_threshold", short="-l", default = 100, nargs=Inf, help="Threshold to determine if the production per person is low, (kg/person)")
 # p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -49,6 +50,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_drop_scenario_adm1.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","ADMLV1", "HYEAR", "CR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_drop_scenario_pixel.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","LONGITUDE", "LATITUDE", "HYEAR", "CR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\baseline\\pythia_out\\pp_GHA_ALL.csv", "test\\data\\case18\\baseline\\debug\\agg_crop_per_person_drop_scenario_pixel.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","LONGITUDE", "LATITUDE", "HYEAR", "CR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\scenario\\pythia_out", "test\\data\\case18\\test\\scenario\\analysis_out\\stage_14_admlv2.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "RUN_NAME", "HYEAR"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -65,6 +67,7 @@ suppressWarnings(if (is.na(factors)) {
   factors <- default_factors
 })
 cfThreshold <- argv$crop_failure_threshold
+hpThreshold <- argv$low_production_per_person_threshold
 
 # argv$period_annual <- TRUE
 
@@ -207,6 +210,24 @@ suppressWarnings(if (!is.na(variables)) {
         calc_production[HWAH >= cfThreshold, (variable) := 0]
         aggregated[, (variable):= calc_production[,mean(get(variable)), by = factors][,V1]]
         final[, crop_failure_area := aggregated[,round(get(variable), 2)]]
+      } else if (variable == "HUNGRY_PEOPLE") {
+        if (!"PRODUCTION" %in% colnames(calc_production)) {
+          calc_production[, PRODUCTION := HARVEST_AREA * HWAH]
+        }
+        calc_production[, POPULATION_NOCITY := POPULATION]
+        calc_production[POPULATION >= quantile(POPULATION, probs = population_threshold), POPULATION_NOCITY := 0]
+        
+        calc_production_pixel <- unique(calc_production[, .(CROP_PER_PERSON = sum(PRODUCTION)/mean(POPULATION), POPULATION_NOCITY), by = .(unique(c("LATITUDE","LONGITUDE", "HYEAR", factors)))])
+        calc_production_pixel[, (variable) := POPULATION_NOCITY]
+        calc_production_pixel[CROP_PER_PERSON > hpThreshold, (variable) := 0]
+        
+        merge(calc_production_pixel, unique(calc_production[,mget(factors), by = .(LATITUDE, LONGITUDE)]), by = c("LATITUDE", "LONGITUDE"), sort = F, all.x=T)
+        for (factor in factors) {
+          if (!factor %in% colnames(calc_production2)) {
+            calc_production2[, (factor) := calc_production[, get(factor), by = .(LATITUDE, LONGITUDE, HYEAR)][, V1]]
+          }
+        }
+        aggregated[, (variable) := calc_production2[, sum(get(variable)), by = factors][,V1]]
       }
     } else {
       print(paste("Processing",  variable, ", which is unsupported and skipped"))
