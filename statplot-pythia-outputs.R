@@ -121,6 +121,7 @@ for (variable in variables) {
       plotTitle <- paste(str_replace_all(key, "__", ", "), crop, variable, sep=", ")
       variableInFile <- variable
     }
+    plotTitle <- str_wrap(plotTitle, 40)
     
     for (i in 1:ceiling(factorNum/maxBarNum)) {
       

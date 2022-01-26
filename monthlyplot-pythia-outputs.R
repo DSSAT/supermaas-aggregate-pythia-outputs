@@ -109,6 +109,7 @@ for (variable in variables) {
       plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("monthly ", variable), sep=", ")
       variableInFile <- paste0("monthly_", variable)
     }
+    plotTitle <- str_wrap(plotTitle, 40)
     
     plot <- ggplot(data = plotData, aes(x = month, y = get(variable), group = month)) +
       geom_boxplot(
