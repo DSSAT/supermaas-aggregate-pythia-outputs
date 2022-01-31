@@ -217,11 +217,6 @@ suppressWarnings(if (!is.na(variables)) {
         calc_production[, POPULATION_NOCITY := POPULATION]
         calc_production[POPULATION >= quantile(POPULATION, probs = population_threshold), POPULATION_NOCITY := 0]
         
-        # calc_production[LATITUDE==10.208&LONGITUDE==-0.792&HYEAR==1984,sum(PRODUCTION)]/188.49
-        # calc_production_pixel[LATITUDE==10.208&LONGITUDE==-0.792&HYEAR==1984]
-        # unique(calc_production[,mget(factors), by = .(LATITUDE, LONGITUDE)][LATITUDE==10.208&LONGITUDE==-0.792&HYEAR==1984])
-        # unique(calc_production[,mget(c("ADMLV1","HYEAR","CR","ADMLV0")), by = .(LATITUDE, LONGITUDE)])
-        
         calc_production_pixel <- unique(calc_production[, .(CROP_PER_PERSON = sum(PRODUCTION)/sum(POPULATION_FCT), POPULATION_NOCITY), by = c(unique(c("LATITUDE","LONGITUDE", "HYEAR", factors)))])
         calc_production_pixel[, (variable) := POPULATION_NOCITY]
         calc_production_pixel[CROP_PER_PERSON > hpThreshold, (variable) := 0]
