@@ -217,17 +217,23 @@ suppressWarnings(if (!is.na(variables)) {
         calc_production[, POPULATION_NOCITY := POPULATION]
         calc_production[POPULATION >= quantile(POPULATION, probs = population_threshold), POPULATION_NOCITY := 0]
         
-        calc_production_pixel <- unique(calc_production[, .(CROP_PER_PERSON = sum(PRODUCTION)/mean(POPULATION), POPULATION_NOCITY), by = .(unique(c("LATITUDE","LONGITUDE", "HYEAR", factors)))])
+        # calc_production[LATITUDE==10.208&LONGITUDE==-0.792&HYEAR==1984,sum(PRODUCTION)]/188.49
+        # calc_production_pixel[LATITUDE==10.208&LONGITUDE==-0.792&HYEAR==1984]
+        # unique(calc_production[,mget(factors), by = .(LATITUDE, LONGITUDE)][LATITUDE==10.208&LONGITUDE==-0.792&HYEAR==1984])
+        # unique(calc_production[,mget(c("ADMLV1","HYEAR","CR","ADMLV0")), by = .(LATITUDE, LONGITUDE)])
+        
+        calc_production_pixel <- unique(calc_production[, .(CROP_PER_PERSON = sum(PRODUCTION)/sum(POPULATION_FCT), POPULATION_NOCITY), by = c(unique(c("LATITUDE","LONGITUDE", "HYEAR", factors)))])
         calc_production_pixel[, (variable) := POPULATION_NOCITY]
         calc_production_pixel[CROP_PER_PERSON > hpThreshold, (variable) := 0]
         
-        merge(calc_production_pixel, unique(calc_production[,mget(factors), by = .(LATITUDE, LONGITUDE)]), by = c("LATITUDE", "LONGITUDE"), sort = F, all.x=T)
+        # merge(calc_production_pixel, unique(calc_production[,mget(factors[!factors %in% c("LATITUDE", "LONGITUDE")]), by = .(LATITUDE, LONGITUDE)]), by = c("LATITUDE", "LONGITUDE"), sort = F, all.x=T)
         for (factor in factors) {
-          if (!factor %in% colnames(calc_production2)) {
-            calc_production2[, (factor) := calc_production[, get(factor), by = .(LATITUDE, LONGITUDE, HYEAR)][, V1]]
+          if (!factor %in% colnames(calc_production_pixel)) {
+            calc_production_pixel[, (factor) := calc_production[, get(factor), by = .(LATITUDE, LONGITUDE, HYEAR)][, V1]]
           }
         }
-        aggregated[, (variable) := calc_production2[, sum(get(variable)), by = factors][,V1]]
+        aggregated[, (variable) := calc_production_pixel[, sum(get(variable)), by = factors][,V1]]
+        final[, hungry_people := aggregated[,round(get(variable), 0)]]
       }
     } else {
       print(paste("Processing",  variable, ", which is unsupported and skipped"))
