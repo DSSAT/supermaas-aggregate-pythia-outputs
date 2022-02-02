@@ -98,15 +98,15 @@ for(f in flist) {
 df <- data.table::rbindlist(dts)
 valid_entries <- df
 colNames <- colnames(valid_entries)
-if ("EDAT" %in% colNames) {
-  valid_entries <- valid_entries[!is.na(as.Date(paste0(EDAT), "%Y%j"))]
-}
-if ("MDAT" %in% colNames) {
-  valid_entries <- valid_entries[!is.na(as.Date(paste0(MDAT), "%Y%j"))]
-}
-if ("ADAT" %in% colNames) {
-  valid_entries <- valid_entries[!is.na(as.Date(paste0(ADAT), "%Y%j"))]
-}
+# if ("EDAT" %in% colNames) {
+#   valid_entries <- valid_entries[!is.na(as.Date(paste0(EDAT), "%Y%j"))]
+# }
+# if ("MDAT" %in% colNames) {
+#   valid_entries <- valid_entries[!is.na(as.Date(paste0(MDAT), "%Y%j"))]
+# }
+# if ("ADAT" %in% colNames) {
+#   valid_entries <- valid_entries[!is.na(as.Date(paste0(ADAT), "%Y%j"))]
+# }
 if ("HDAT" %in% colNames) {
   valid_entries <- valid_entries[!is.na(as.Date(paste0(HDAT), "%Y%j"))]
 }
