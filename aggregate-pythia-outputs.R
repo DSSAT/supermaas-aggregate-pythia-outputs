@@ -111,7 +111,8 @@ if ("HDAT" %in% colNames) {
   valid_entries <- valid_entries[!is.na(as.Date(paste0(HDAT), "%Y%j"))]
 }
 if ("HWAH" %in% colNames) {
-  valid_entries <- valid_entries[HWAH >= 0]
+  # valid_entries <- valid_entries[HWAH >= 0]
+  valid_entries[HWAH < 0, HWAH = 0]
 }
 
 if (!"HYEAR" %in% colNames) {
