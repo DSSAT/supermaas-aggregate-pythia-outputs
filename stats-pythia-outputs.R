@@ -46,6 +46,8 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0.csv", "test\\data\\case12\\Maize_Belg\\pp_ETH_Maize_irrig_belg_S_season_base__fen_tot0_region.csv", "-a", "PRCP", "HWAH", "-f","ADMLV1", "HYEAR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result2\\report13_0.csv", "-a", "HWAH", "-f","ADMLV0", "FILE", "-b", "-p", "FILE", "-r", "ADMLV0", "-l", "pp_GHA_CC_FCT_GHMZ_rf_0N_CC", "-s", "pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv"))
 # argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result4\\report13_1.csv", "-a", "HWAH", "-f","ADMLV1", "FILE", "-b", "-p", "FILE", "-r", "ADMLV1", "-l", "pp_GHA_CC_FCT_GHMZ_rf_0N_CC", "-s", "pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case13", "test\\data\\case13\\result4\\report13_1.csv", "-a", "HWAH", "-f","ADMLV1", "FILE", "-b", "-p", "FILE", "-r", "ADMLV1", "-l", "pp_GHA_CC_FCT_GHMZ_rf_0N_CC", "-s", "pp_GHA_CC_FCT_GHMZ_rf_lowN_CC.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test2\\baseline\\analysis_out\\stage_8_admlv0.csv", "test\\data\\case18\\test2\\baseline\\analysis_out\\stage_12_admlv0.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAH", "-f","ADMLV0", "-i"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -131,18 +133,24 @@ if (!argv$is_aggregated) {
 valid_entries <- df
 
 print("Starting statistics.")
-final <- valid_entries[,.(Var = predefined_percentiles), by = c(var_dic[name %in% factors, factor])]
+final <- valid_entries[,.(Var = c("MEAN", "STD", predefined_percentiles)), by = c(var_dic[name %in% factors, factor])]
 suppressWarnings(if (!is.na(variables)) {
   for (variable in variables) {
     print(paste("Processing percentile calculation for",  variable))
     header <- tolower(variable)
     if (variable == "TIMESTAMP") {
       pcts <- valid_entries[, .(Var = predefined_percentiles, PCTVAL=as.Date(quantile(as.integer(get(header)), probs=predefined_percentiles/100), origin="1970-01-01")), by = c(var_dic[name %in% factors, factor])]
+      pcts <- rbind(valid_entries[, .(Var = "MEAN", PCTVAL=as.Date(mean(as.integer(get(header))), origin="1970-01-01")), by = c(var_dic[name %in% factors, factor])],
+                    valid_entries[, .(Var = "STD", PCTVAL=as.Date(sd(as.integer(get(header))), origin="1970-01-01")), by = c(var_dic[name %in% factors, factor])],
+                    pcts)
     } else {
       pcts <- valid_entries[, .(Var = predefined_percentiles, PCTVAL=quantile(get(header), probs=predefined_percentiles/100)), by = c(var_dic[name %in% factors, factor])]
+      pcts <- rbind(valid_entries[, .(Var = "MEAN", PCTVAL=mean(get(header))), by = c(var_dic[name %in% factors, factor])],
+                    valid_entries[, .(Var = "STD", PCTVAL=sd(get(header))), by = c(var_dic[name %in% factors, factor])],
+                    pcts)
     }
     setnames(pcts, "PCTVAL", header)
-    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"))
+    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"), sort = F)
   }
 })
 suppressWarnings(if (!is.na(totVariables)) {
@@ -150,8 +158,11 @@ suppressWarnings(if (!is.na(totVariables)) {
     header <- var_dic[name == variable, total]
     print(paste("Processing percentile calculation for",  header))
     pcts <- valid_entries[, .(Var = predefined_percentiles, PCTVAL=quantile(get(header), probs=predefined_percentiles/100)), by = c(var_dic[name %in% factors, factor])]
+    pcts <- rbind(valid_entries[, .(Var = "MEAN", PCTVAL=mean(get(header))), by = c(var_dic[name %in% factors, factor])],
+                  valid_entries[, .(Var = "STD", PCTVAL=sd(get(header))), by = c(var_dic[name %in% factors, factor])],
+                  pcts)
     setnames(pcts, "PCTVAL", header)
-    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"))
+    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"), sort = F)
   }
 })
 suppressWarnings(if (!is.na(avgVariables)) {
@@ -160,11 +171,17 @@ suppressWarnings(if (!is.na(avgVariables)) {
     print(paste("Processing percentile calculation for",  header))
     if (var_dic[name == variable, unit] == "date") {
       pcts <- valid_entries[, .(Var = predefined_percentiles, PCTVAL=as.Date(quantile(as.integer(get(header)), probs=predefined_percentiles/100), origin="1970-01-01")), by = c(var_dic[name %in% factors, factor])]
+      pcts <- rbind(valid_entries[, .(Var = "MEAN", PCTVAL=as.Date(mean(as.integer(get(header))), origin="1970-01-01")), by = c(var_dic[name %in% factors, factor])],
+                    valid_entries[, .(Var = "STD", PCTVAL=as.Date(sd(as.integer(get(header))), origin="1970-01-01")), by = c(var_dic[name %in% factors, factor])],
+                    pcts)
     } else {
       pcts <- valid_entries[, .(Var = predefined_percentiles, PCTVAL=quantile(get(header), probs=predefined_percentiles/100)), by = c(var_dic[name %in% factors, factor])]
+      pcts <- rbind(valid_entries[, .(Var = "MEAN", PCTVAL=mean(get(header))), by = c(var_dic[name %in% factors, factor])],
+                    valid_entries[, .(Var = "STD", PCTVAL=sd(get(header))), by = c(var_dic[name %in% factors, factor])],
+                    pcts)
     }
     setnames(pcts, "PCTVAL", header)
-    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"))
+    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"), sort = F)
   }
 })
 suppressWarnings(if (!is.na(totTonVariables)) {
@@ -172,11 +189,14 @@ suppressWarnings(if (!is.na(totTonVariables)) {
     header <- var_dic[name == variable, total_ton]
     print(paste("Processing percentile calculation for",  header))
     pcts <- valid_entries[, .(Var = predefined_percentiles, PCTVAL=quantile(get(header), probs=predefined_percentiles/100)), by = c(var_dic[name %in% factors, factor])]
+    pcts <- rbind(valid_entries[, .(Var = "MEAN", PCTVAL=mean(get(header))), by = c(var_dic[name %in% factors, factor])],
+                  valid_entries[, .(Var = "STD", PCTVAL=sd(get(header))), by = c(var_dic[name %in% factors, factor])],
+                  pcts)
     setnames(pcts, "PCTVAL", header)
-    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"))
+    final <- merge(final, pcts, by = c(var_dic[name %in% factors, factor], "Var"), sort = F)
   }
 })
-final[,Var:=paste0(Var, "PCT")][Var == "0PCT", Var := "MIN"][Var == "100PCT", Var := "MAX"]
+final[Var %in% predefined_percentiles,Var:=paste0(Var, "PCT")][Var == "0PCT", Var := "MIN"][Var == "100PCT", Var := "MAX"]
 
 data.table::fwrite(final, file = out_file)
 
