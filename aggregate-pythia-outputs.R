@@ -274,7 +274,7 @@ suppressWarnings(if (!is.na(totVariables)) {
         if (multiYearIgnFlg) {
           aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
         } else {
-          aggregated[, (header):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (header):= calc_production[,sum(get(header)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         }
         final[, (header):= aggregated[,get(header)]]
         
@@ -353,7 +353,7 @@ suppressWarnings(if (!is.na(totTonVariables)) {
         if (multiYearIgnFlg) {
           aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
         } else {
-          aggregated[, (header):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (header):= calc_production[,sum(get(header)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         }
         final[, (header):= aggregated[,round(get(header)/1000, digits = 2)]]
         
