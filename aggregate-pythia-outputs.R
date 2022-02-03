@@ -220,9 +220,9 @@ suppressWarnings(if (!is.na(variables)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
         }
         if (multiYearIgnFlg) {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM)), by = factors][,V1]]
         } else {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         }
         final[, crop_per_drop := aggregated[,round(get(variable), 2)]]
       } else if (variable == "CROP_FAILURE_AREA") {
