@@ -1,6 +1,7 @@
 name,unit,min,max,factor,total,average,total_ton,timeline,boxplot
 LATITUDE,degree,-90,90,lat,,,,,
 LONGITUDE,degree,-180,180,lng,,,,,
+SEASON,text,,,season,,,,,
 HARVEST_AREA,ha,0,,,HAREA_TOT,,,,
 ADMLV0,text,,,country,,,,,
 ADMLV1,text,,,region,,,,,

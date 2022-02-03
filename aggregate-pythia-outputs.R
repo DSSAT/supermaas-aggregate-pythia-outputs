@@ -150,6 +150,10 @@ if (!"ADMLVP" %in% colNames) {
   valid_entries[,`:=`(ADMLVP = 1)]
 }
 
+if (!"SEASON" %in% colNames && "SEASON" %in% factors) {
+  factors <- factors[!factors %in% "SEASON"]
+}
+
 
 print("Starting aggregation.")
 # if (argv$period_annual) {
