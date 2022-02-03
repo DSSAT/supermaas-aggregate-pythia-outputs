@@ -200,7 +200,7 @@ suppressWarnings(if (!is.na(variables)) {
         } else {
           aggregated[, (variable):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         }
-        final[, production := aggregated[,round(get(variable)/1000, digit = 1)]]
+        final[, production := aggregated[,round(get(variable)/1000, digit = 2)]]
       } else if (variable == "CROP_PER_PERSON") {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
@@ -339,7 +339,7 @@ suppressWarnings(if (!is.na(totTonVariables)) {
         } else {
           aggregated[, (header):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         }
-        final[, (header):= aggregated[,round(get(header)/1000, digits = 1)]]
+        final[, (header):= aggregated[,round(get(header)/1000, digits = 2)]]
         
       } else {
         print(paste("Processing summary (unit=ton) for",  variable, ", which is unsupported and skipped"))
