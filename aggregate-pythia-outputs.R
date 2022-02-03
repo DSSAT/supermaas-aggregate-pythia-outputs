@@ -112,7 +112,7 @@ if ("HDAT" %in% colNames) {
 }
 if ("HWAH" %in% colNames) {
   # valid_entries <- valid_entries[HWAH >= 0]
-  valid_entries[HWAH < 0, HWAH = 0]
+  valid_entries[HWAH < 0, HWAH := 0]
 }
 
 if (!"HYEAR" %in% colNames) {
