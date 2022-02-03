@@ -158,9 +158,9 @@ calc_production <- valid_entries
 # calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA*ADMLVP)), by = factors]
 # aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA*ADMLVP)),by = factors]
 calc_production <- calc_production[,`:=`(HARVEST_AREA_PCT = HARVEST_AREA/sum(HARVEST_AREA)), by = factors]
-if ("POPULATION" %in% colNames) {
-  calc_production[,POPULATION_FCT := POPULATION / ADMLVP * HARVEST_AREA / sum(HARVEST_AREA), by = .(LATITUDE, LONGITUDE, HYEAR)]
-}
+# if ("POPULATION" %in% colNames) {
+#   calc_production[,POPULATION_FCT := POPULATION / ADMLVP * HARVEST_AREA / sum(HARVEST_AREA), by = .(LATITUDE, LONGITUDE, HYEAR)]
+# }
 
 aggregated <- calc_production[,.(HARVEST_AREA_TOT=sum(HARVEST_AREA)),by = factors]
 final <- aggregated[, ..factors]
@@ -205,13 +205,21 @@ suppressWarnings(if (!is.na(variables)) {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
         }
-        aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum(POPULATION_FCT), by = factors][,V1]]
+        if (multiYearIgnFlg) {
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum(POPULATION), by = factors][,V1]]
+        } else {
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum(POPULATION), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+        }
         final[, crop_per_person := aggregated[,round(get(variable), 1)]]
       } else if (variable == "CROP_PER_DROP") {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
         }
-        aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = factors][,V1]]
+        if (multiYearIgnFlg) {
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = factors][,V1]]
+        } else {
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+        }
         final[, crop_per_drop := aggregated[,round(get(variable), 2)]]
       } else if (variable == "CROP_FAILURE_AREA") {
         calc_production[HWAH < cfThreshold, (variable) := HARVEST_AREA]
@@ -226,7 +234,7 @@ suppressWarnings(if (!is.na(variables)) {
         calc_production[, POPULATION_NOCITY := POPULATION]
         calc_production[POPULATION >= quantile(POPULATION, probs = population_threshold), POPULATION_NOCITY := 0]
         
-        calc_production_pixel <- unique(calc_production[, .(CROP_PER_PERSON = sum(PRODUCTION)/sum(POPULATION_FCT), POPULATION_NOCITY), by = c(unique(c("LATITUDE","LONGITUDE", "HYEAR", factors)))])
+        calc_production_pixel <- unique(calc_production[, .(CROP_PER_PERSON = sum(PRODUCTION)/sum(POPULATION), POPULATION_NOCITY), by = c(unique(c("LATITUDE","LONGITUDE", "HYEAR", factors)))])
         calc_production_pixel[, (variable) := POPULATION_NOCITY]
         calc_production_pixel[CROP_PER_PERSON > hpThreshold, (variable) := 0]
         
@@ -297,7 +305,6 @@ suppressWarnings(if (!is.na(avgVariables)) {
         if ("year" %in% var_dic[name %in% factors, unit]) {
           aggregated[,(header):= calc_production[,as.Date(sum(as.integer(get(header)) * HARVEST_AREA_PCT), origin="1970-01-01"),by = factors][,V1]]
         } else {
-          
           aggregated[,(header):= calc_production[,format(as.Date("1970-01-01") + sum(as.integer(get(header) - as.Date(paste0(PYEAR, "-01-01"))) * HARVEST_AREA_PCT), "%m-%d"),by = factors][,V1]]
         }
         final[, (header) := aggregated[,get(header)]]
@@ -309,7 +316,12 @@ suppressWarnings(if (!is.na(avgVariables)) {
         # if (!header_tot %in% colnames(calc_production)) {
         #   calc_production[,(header_tot):= get(variable) * HARVEST_AREA]
         # }
-        aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
+        if (multiYearIgnFlg) {
+          aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
+        } else {
+          aggregated[, (header):= calc_production[,sum(get(variable)* HARVEST_AREA)/sum(HARVEST_AREA), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+        }
+        
         final[, (header):= aggregated[,get(header)]]
         
       }
