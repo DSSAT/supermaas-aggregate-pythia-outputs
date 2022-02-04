@@ -52,7 +52,10 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_drop_scenario_pixel.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","LONGITUDE", "LATITUDE", "HYEAR", "CR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\baseline\\pythia_out\\pp_GHA_ALL.csv", "test\\data\\case18\\baseline\\debug\\agg_crop_per_person_drop_scenario_pixel.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","LONGITUDE", "LATITUDE", "HYEAR", "CR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\scenario\\pythia_out", "test\\data\\case18\\test\\scenario\\analysis_out\\stage_14_admlv2.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "RUN_NAME", "HYEAR"))
-# argv <- argparser::parse_args(p, c("test\\data\\case18\\test3\\baseline\\pythia_out", "test\\data\\case18\\test2\\scenario\\analysis_out\\stage_2.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR", "HYEAR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_2_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR","RUN_NAME", "HYEAR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_3_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR", "HYEAR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_5_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_14_admlv0_1.csv", "-v", "PRODUCTION", "-f","ADMLV0", "HMONTH", "HYEAR", "CR"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -366,6 +369,25 @@ suppressWarnings(if (!is.na(totTonVariables)) {
     }
   }
 })
+
+if ("month" %in% colnames(final)) {
+  dataGroups <- unique(final[,mget(headers[!headers %in% "month"])])
+  groupSize <- nrow(dataGroups)
+  dataGroups <- dataGroups[rep(seq_len(groupSize), 12), ]
+  monthsList <- c()
+  for (i in 1:12) {
+    monthsList <- c(monthsList, rep(i, groupSize))
+  }
+  dataGroups[, month := monthsList]
+  setcolorder(dataGroups, headers)
+  final <- merge(dataGroups, final, by = headers, sort = F, all.x = T)
+  
+  for (header in colnames(final)) {
+    if (!header %in% headers) {
+      final[is.na(get(header)), (header) := 0]
+    }
+  }
+}
 
 # if ("timestamp" %in% colnames(final) || !"year" %in% var_dic[name %in% factors, unit]) {
 #   final[, year:=NULL]
