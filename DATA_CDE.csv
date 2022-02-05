@@ -105,4 +105,3 @@ PRCP,mm,0,,,,PRCP_AVE,,,rainfall
 ETCP,mm,0,,,,ETCP_AVE,,,ETCP
 ESCP,mm,0,,,,ESCP_AVE,,,ESCP
 EPCP,mm,0,,,,EPCP_AVE,,,EPCP
-SEASON,text,,,season,,,,,
