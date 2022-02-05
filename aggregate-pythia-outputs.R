@@ -156,7 +156,11 @@ if (!"ADMLVP" %in% colNames) {
 if (!"SEASON" %in% colNames && "SEASON" %in% factors) {
   factors <- factors[!factors %in% "SEASON"]
 }
-
+if ("SEASON" %in% colNames) {
+  populationFactors <- unique(c(factors,"HYEAR","RUN_NAME","SEASON"))
+} else {
+  populationFactors <- unique(c(factors,"HYEAR","RUN_NAME"))
+}
 
 print("Starting aggregation.")
 # if (argv$period_annual) {
@@ -212,10 +216,13 @@ suppressWarnings(if (!is.na(variables)) {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
         }
+        calc_production_fct <- calc_production[,.(PRODUCTION = sum(PRODUCTION)), by = c(unique(c(factors, "HYEAR")))]
+        calc_production_fct[,POPULATION := calc_production[,sum(POPULATION), by = populationFactors][,mean(V1), by = c(unique(c(factors, "HYEAR")))][,V1]]
+        calc_production_fct[,CROP_PER_PERSON := PRODUCTION / POPULATION]
         if (multiYearIgnFlg) {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum(POPULATION), by = factors][,V1]]
+          aggregated[, (variable):= calc_production_fct[,sum(CROP_PER_PERSON), by = factors][,V1]]
         } else {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum(POPULATION), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (variable):= calc_production_fct[,mean(CROP_PER_PERSON), by = factors][,V1]]
         }
         final[, crop_per_person := aggregated[,round(get(variable), 1)]]
       } else if (variable == "CROP_PER_DROP") {
@@ -223,9 +230,9 @@ suppressWarnings(if (!is.na(variables)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
         }
         if (multiYearIgnFlg) {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM)), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = factors][,V1]]
         } else {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         }
         final[, crop_per_drop := aggregated[,round(get(variable), 2)]]
       } else if (variable == "CROP_FAILURE_AREA") {
@@ -238,21 +245,27 @@ suppressWarnings(if (!is.na(variables)) {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[, PRODUCTION := HARVEST_AREA * HWAH]
         }
-        calc_production[, POPULATION_NOCITY := POPULATION]
-        calc_production[POPULATION >= quantile(POPULATION, probs = population_threshold), POPULATION_NOCITY := 0]
-        
-        calc_production_pixel <- unique(calc_production[, .(CROP_PER_PERSON = sum(PRODUCTION)/sum(POPULATION), POPULATION_NOCITY), by = c(unique(c("LATITUDE","LONGITUDE", "HYEAR", factors)))])
-        calc_production_pixel[, (variable) := POPULATION_NOCITY]
-        calc_production_pixel[CROP_PER_PERSON > hpThreshold, (variable) := 0]
-        
-        # merge(calc_production_pixel, unique(calc_production[,mget(factors[!factors %in% c("LATITUDE", "LONGITUDE")]), by = .(LATITUDE, LONGITUDE)]), by = c("LATITUDE", "LONGITUDE"), sort = F, all.x=T)
-        for (factor in factors) {
-          if (!factor %in% colnames(calc_production_pixel)) {
-            calc_production_pixel[, (factor) := calc_production[, get(factor), by = .(LATITUDE, LONGITUDE, HYEAR)][, V1]]
-          }
+        pixelFactors <- c("LATITUDE","LONGITUDE", "HYEAR")
+        if ("SEASON" %in% colnames(calc_production)) {
+          pixelPopulationFactors <- c("LATITUDE","LONGITUDE","HYEAR","RUN_NAME","SEASON")
+        } else {
+          pixelPopulationFactors <- c("LATITUDE","LONGITUDE","HYEAR","RUN_NAME")
         }
-        aggregated[, (variable) := calc_production_pixel[, sum(get(variable)), by = factors][,V1]]
-        final[, hungry_people := aggregated[,round(get(variable), 0)]]
+        
+        calc_production_pixel <- calc_production[,.(PRODUCTION = sum(PRODUCTION)), by = pixelFactors]
+        calc_production_pixel[,POPULATION := calc_production[,sum(POPULATION), by = pixelPopulationFactors][,mean(V1), by = pixelFactors][,V1]]
+        calc_production_pixel[,CROP_PER_PERSON := PRODUCTION / POPULATION]
+        
+        population_threshold_num <- calc_production_pixel[,quantile(POPULATION, probs = population_threshold),by = HYEAR][,mean(V1)]
+        calc_production_pixel_nocity <- calc_production_pixel[POPULATION < population_threshold_num]
+        calc_production_pixel_nocity[,HUNGRY_PEOPLE := 0][CROP_PER_PERSON < hpThreshold, HUNGRY_PEOPLE := POPULATION]
+        
+        calc_production <- merge(calc_production, calc_production_pixel_nocity[,mget(c(pixelFactors, "HUNGRY_PEOPLE"))], by = pixelFactors, sort = F, all.x=T)
+        calc_production[is.na(HUNGRY_PEOPLE), HUNGRY_PEOPLE := 0]
+        calc_production[, HUNGRY_PEOPLE := HUNGRY_PEOPLE * ADMLVP]
+        
+        aggregated[, (variable) := calc_production[, sum(HUNGRY_PEOPLE), by = populationFactors][,mean(V1), by = factors][,V1]]
+        final[, hungry_people := aggregated[,get(variable)]]
       }
     } else {
       print(paste("Processing",  variable, ", which is unsupported and skipped"))
@@ -282,8 +295,10 @@ suppressWarnings(if (!is.na(totVariables)) {
         final[, (header):= aggregated[,get(header)]]
         
       } else if (variable == "HARVEST_AREA") {
-        typeof(unique(c(factors, "HYEAR")))
         aggregated[, (header):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+        final[, (header):= aggregated[,get(header)]]
+      } else if (variable == "POPULATION") {
+        aggregated[, (header):= calc_production[,sum(get(variable)), by = populationFactors][,mean(V1), by = factors][,V1]]
         final[, (header):= aggregated[,get(header)]]
       } else {
         print(paste("Processing summary for",  variable, ", which is unsupported and skipped"))
