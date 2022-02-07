@@ -235,6 +235,7 @@ suppressWarnings(if (!is.na(variables)) {
           aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         }
         final[, crop_per_drop := aggregated[,round(get(variable), 2)]]
+        final[is.na(crop_per_drop), crop_per_drop := 0]
       } else if (variable == "CROP_FAILURE_AREA") {
         calc_production[HWAH < cfThreshold, (variable) := HARVEST_AREA]
         calc_production[HWAH >= cfThreshold, (variable) := 0]
