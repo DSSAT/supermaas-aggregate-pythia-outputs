@@ -108,17 +108,22 @@ for (variable in variables) {
     }
     
     if (var_dic[average==variable, .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("average ", var_dic[average==variable, boxplot]), sep=", ")
-      variableInFile <- paste0("average_", var_dic[average==variable, boxplot])
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("average ", var_dic[average==variable, boxplot], " (", var_dic[average==variable, unit], ")"), sep=", ")
+      variableInFile <- paste0("average ", var_dic[average==variable, boxplot])
     } else if (var_dic[total==variable, .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total==variable, boxplot]), sep=", ")
-      variableInFile <- paste0("total_", var_dic[average==variable, boxplot])
-      # } else if (var_dic[total_ton==variable, N] > 0) {
-      #   plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("total ", var_dic[total==variable, boxplot], " (", str_replace_all(var_dic[total==variable, unit], "/ha", ""), ")"), sep=", ")
+      variableInFile <- paste0("total ", var_dic[total==variable, boxplot])
+    } else if (var_dic[total_ton==variable, .N] > 0) {
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
+      variableInFile <- paste0("total ", var_dic[total_ton==variable, boxplot])
+    } else if (var_dic[name==toupper(variable), .N] > 0) {
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0(var_dic[name==toupper(variable), boxplot], " (", var_dic[name==toupper(variable), unit], ")"), sep=", ")
+      variableInFile <- var_dic[name==toupper(variable), boxplot]
     } else {
-      plotTitle <- paste(str_replace_all(key, "__", ", "), crop, variable, sep=", ")
-      variableInFile <- variable
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, variable, sep=", ")
+      variableInFile <- tolower(variable)
     }
+    var_dic[name==toupper(""), boxplot]
     plotTitle <- str_wrap(plotTitle, 40)
     
     for (i in 1:ceiling(factorNum/maxBarNum)) {
@@ -140,7 +145,7 @@ for (variable in variables) {
               legend.title = element_text(size = 13)) +
         # theme(axis.text = element_text(size = 13)) +
         theme(axis.title = element_text(size = 13, face = "bold")) +
-        labs(y = variableInFile, colour = "Legend", title = plotTitle) +
+        labs(x = "", y = variableInFile, colour = "Legend", title = plotTitle) +
         theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
         theme(panel.grid.minor = element_blank()) +
         theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
@@ -149,9 +154,9 @@ for (variable in variables) {
       # scale_fill_manual(values=colors)
       
       if (ceiling(factorNum/maxBarNum) == 1) {
-        file_name <- paste0(variableInFile, "-", str_replace(key, "\\.", "__"), ".", extension)
+        file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace(key, "\\.", "__"), ".", extension)
       } else {
-        file_name <- paste0(variableInFile, "-", str_replace(key, "\\.", "__"), "_", i, ".", extension)
+        file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace(key, "\\.", "__"), "_", i, ".", extension)
       }
       
       ggsave(

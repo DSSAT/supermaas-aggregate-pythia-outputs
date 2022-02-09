@@ -2,15 +2,16 @@ name,unit,min,max,factor,total,average,total_ton,timeline,boxplot
 LATITUDE,degree,-90,90,lat,,,,,
 LONGITUDE,degree,-180,180,lng,,,,,
 SEASON,text,,,season,,,,,
-HARVEST_AREA,ha,0,,,HAREA_TOT,,,,
+HARVEST_AREA,ha,0,,,HAREA_TOT,,,,harvest area
 ADMLV0,text,,,country,,,,,
 ADMLV1,text,,,region,,,,,
 ADMLV2,text,,,sub-region,,,,,
 ADMLV3,text,,,sub-region2,,,,,
 ADMLV4,text,,,sub-region3,,,,,
+ADMLV5,text,,,sub-region4,,,,,
 ADMLVP,fraction,0,1,,,,,,
 ADMLV_INFO,text,,,admlv_info,,,,,
-POPULATION,number,0,,,population,,,,
+POPULATION,number,0,,,population,,,,population
 FILE,text,,,file,,,,,
 PYEAR,year,,,,,,,,
 HYEAR,year,,,year,,,,,
@@ -39,7 +40,7 @@ MDAT,date,,,,,MDAT_AVE,,,MDAT
 HDAT,date,,,date,,HDAT_AVE,,,harvest date
 DWAP,kg/ha,0,,,DWAP_TOT,DWAP_AVE,,,DWAP
 CWAM,kg/ha,0,,,CWAM_TOT,CWAM_AVE,BIOMASS_PRODUCTION,,biomass
-HWAM,kg/ha,0,,,HWAM_TOT,HWAM_AVE,,,HWAM
+HWAM,kg/ha,0,,,HWAM_TOT,HWAM_AVE,,,yield
 HWAH,kg/ha,0,,,HWAH_TOT,HWAH_AVE,PRODUCTION,PRODUCTION,yield
 BWAH,kg/ha,0,,,BWAH_TOT,BWAH_AVE,,,BWAH
 PWAM,kg/ha,0,,,PWAM_TOT,PWAM_AVE,,,PWAM
@@ -101,7 +102,11 @@ TMINA,degree_c,,,,,,,,
 SRADA,MJ/m2/d,0,,,,,,,
 DAYLA,hr/d,0,,,,,,,
 CO2A,ppm,0,,,,,,,
-PRCP,mm,0,,,,PRCP_AVE,,,rainfall
+PRCP,mm,0,,,PRCP_VOL_TOT,PRCP_AVE,,,rainfall
 ETCP,mm,0,,,,ETCP_AVE,,,ETCP
 ESCP,mm,0,,,,ESCP_AVE,,,ESCP
 EPCP,mm,0,,,,EPCP_AVE,,,EPCP
+CROP_PER_DROP,kg/ha/mm,,,,,,,,crop per drop
+CROP_PER_PERSON,kg/person,,,,,,,,crop per person
+PRODUCTION,ton,,,,,,,,production
+CROP_FAILURE_AREA,ha,,,,,,,,crop failure area

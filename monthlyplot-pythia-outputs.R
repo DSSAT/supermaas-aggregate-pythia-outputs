@@ -90,16 +90,20 @@ for (variable in variables) {
     }
     
     if (var_dic[average==variable, .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("monthly average ", var_dic[average==variable, boxplot]), sep=", ")
-      variableInFile <- paste0("monthly_average_", var_dic[average==variable, boxplot])
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly average ", var_dic[average==variable, boxplot], " (", var_dic[average==variable, unit], ")"), sep=", ")
+      variableInFile <- paste0("monthly average ", var_dic[average==variable, boxplot])
     } else if (var_dic[total==variable, .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("monthly total ", var_dic[total==variable, boxplot]), sep=", ")
-      variableInFile <- paste0("monthly_total_", var_dic[average==variable, boxplot])
-      # } else if (var_dic[total_ton==variable, N] > 0) {
-      #   plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly total ", var_dic[total==variable, boxplot], " (", str_replace_all(var_dic[total==variable, unit], "/ha", ""), ")"), sep=", ")
+      variableInFile <- paste0("monthly total ", var_dic[total==variable, boxplot])
+    } else if (var_dic[total_ton==variable, .N] > 0) {
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
+      variableInFile <- paste0("monthly total ", var_dic[total_ton==variable, boxplot])
+    } else if (var_dic[name==toupper(variable), .N] > 0) {
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly ",var_dic[name==toupper(variable), boxplot], " (", var_dic[name==toupper(variable), unit], ")"), sep=", ")
+      variableInFile <- paste0("monthly ", var_dic[name==toupper(variable), boxplot])
     } else {
-      plotTitle <- paste(str_replace_all(key, "__", ", "), crop, paste0("monthly ", variable), sep=", ")
-      variableInFile <- paste0("monthly_", variable)
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly ", variable), sep=", ")
+      variableInFile <- paste0("monthly ", tolower(variable))
     }
     plotTitle <- str_wrap(plotTitle, 40)
     
@@ -132,7 +136,7 @@ for (variable in variables) {
       theme(plot.title = element_text(size=20, face="bold", hjust = 0.5))
     
     
-    file_name <- paste0(variableInFile, "-", str_replace(key, "\\.", "__"), ".", extension)
+    file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace(key, "\\.", "__"), ".", extension)
     ggsave(
       plot,
       filename = file_name,
