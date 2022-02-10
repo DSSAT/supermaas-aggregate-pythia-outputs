@@ -154,9 +154,9 @@ for (variable in variables) {
       # scale_fill_manual(values=colors)
       
       if (ceiling(factorNum/maxBarNum) == 1) {
-        file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace(key, "\\.", "__"), ".", extension)
+        file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace_all(key, "\\.", "__"), ".", extension)
       } else {
-        file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace(key, "\\.", "__"), "_", i, ".", extension)
+        file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace_all(key, "\\.", "__"), "_", i, ".", extension)
       }
       
       ggsave(

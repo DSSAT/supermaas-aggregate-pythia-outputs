@@ -136,7 +136,7 @@ for (variable in variables) {
       theme(plot.title = element_text(size=20, face="bold", hjust = 0.5))
     
     
-    file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace(key, "\\.", "__"), ".", extension)
+    file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace_all(key, "\\.", "__"), ".", extension)
     ggsave(
       plot,
       filename = file_name,
