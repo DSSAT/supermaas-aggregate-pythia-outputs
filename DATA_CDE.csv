@@ -15,8 +15,8 @@ ADMLV_INFO,text,,,admlv_info,,,,,
 POPULATION,number,0,,,population,,,,population
 TOTAL_WATER,m3,,,,total_water,,,,total water
 FILE,text,,,file,,,,,
-PYEAR,year,,,,,,,,
-HYEAR,year,,,year,,,,,
+PYEAR,year,,,year,,,,,
+HYEAR,year,,,hyear,,,,,
 HMONTH,month,,,month,,,,,
 GSD,day,49,269,,,GSD_AVE,,,growing season
 ETFD,day,0,,,,ETFD_AVE,,,

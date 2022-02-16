@@ -156,10 +156,23 @@ if (!"ADMLVP" %in% colNames) {
 if (!"SEASON" %in% colNames && "SEASON" %in% factors) {
   factors <- factors[!factors %in% "SEASON"]
 }
-if ("SEASON" %in% colNames) {
-  populationFactors <- unique(c(factors,"HYEAR","RUN_NAME","SEASON"))
+populationVars <- c("LATITUDE", "LONGITUDE")
+if ("ADMLVP" %in% colNames) {
+  for (admVar in paste0("ADMLV", 0:5)) {
+    if (admVar %in% colNames) {
+      populationVars <- c(populationVars, admVar)
+    }
+  }
+  populationVars <- c(populationVars, "ADMLVP")
+}
+populationFactors <- unique(c(populationVars, factors))
+
+if ("PYEAR" %in% factors) {
+  yearFactor <- "PYEAR"
+} else if ("HYEAR" %in% factors) {
+  yearFactor <- "HYEAR"
 } else {
-  populationFactors <- unique(c(factors,"HYEAR","RUN_NAME"))
+  yearFactor <- var_dic[factor == "year", name]
 }
 
 print("Starting aggregation.")
@@ -192,6 +205,10 @@ if ("ADMLV0" %in% factors) {
 }
 setnames(final, headers)
 
+# calculate the population
+population <- unique(calc_production[, POPULATION, by = populationFactors])[, .(POPULATION=sum(POPULATION)), by = factors]
+aggregated <- merge(aggregated, population, by = factors, sort = F)
+
 # execute predefined variable aggregation
 suppressWarnings(if (!is.na(variables)) {
   for (variable in variables) {
@@ -209,37 +226,35 @@ suppressWarnings(if (!is.na(variables)) {
         if (multiYearIgnFlg) {
           aggregated[, (variable):= calc_production[,sum(get(variable)), by = factors][,V1]]
         } else {
-          aggregated[, (variable):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(get(variable)), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
         }
         final[, production := aggregated[,round(get(variable)/1000, digit = 2)]]
       } else if (variable == "CROP_PER_PERSON") {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
+          if (multiYearIgnFlg) {
+            aggregated[, PRODUCTION := calc_production[,sum(PRODUCTION), by = factors][,V1]]
+          } else {
+            aggregated[, PRODUCTION := calc_production[,sum(PRODUCTION), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
+          }
         }
-        calc_production_fct <- calc_production[,.(PRODUCTION = sum(PRODUCTION)), by = c(unique(c(factors, "HYEAR")))]
-        calc_production_fct[,POPULATION := calc_production[,sum(POPULATION), by = populationFactors][,mean(V1), by = c(unique(c(factors, "HYEAR")))][,V1]]
-        calc_production_fct[,CROP_PER_PERSON := PRODUCTION / POPULATION]
-        if (multiYearIgnFlg) {
-          aggregated[, (variable):= calc_production_fct[,sum(CROP_PER_PERSON), by = factors][,V1]]
-        } else {
-          aggregated[, (variable):= calc_production_fct[,mean(CROP_PER_PERSON), by = factors][,V1]]
-        }
+        aggregated[, (variable) := PRODUCTION / POPULATION]
         final[, crop_per_person := aggregated[,round(get(variable), 1)]]
       } else if (variable == "CROP_PER_DROP") {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[,PRODUCTION := HARVEST_AREA * HWAH]
         }
         if (multiYearIgnFlg) {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = factors][is.na(V1),V1:=0][,V1]]
         } else {
-          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (variable):= calc_production[,sum(PRODUCTION)/sum((PRCP + IRCM) * HARVEST_AREA), by = c(unique(c(factors, yearFactor)))][is.na(V1),V1:=0][,mean(V1), by = factors][,V1]]
         }
         final[, crop_per_drop := aggregated[,round(get(variable), 2)]]
         final[is.na(crop_per_drop), crop_per_drop := 0]
       } else if (variable == "CROP_FAILURE_AREA") {
         calc_production[HWAH < cfThreshold, (variable) := HARVEST_AREA]
         calc_production[HWAH >= cfThreshold, (variable) := 0]
-        aggregated[, (variable):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+        aggregated[, (variable):= calc_production[,sum(get(variable)), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
         # aggregated[, (variable):= calc_production[,mean(get(variable)), by = factors][,V1]]
         final[, crop_failure_area := aggregated[,round(get(variable), 2)]]
       } else if (variable == "TOTAL_WATER") {
@@ -253,11 +268,11 @@ suppressWarnings(if (!is.na(variables)) {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[, PRODUCTION := HARVEST_AREA * HWAH]
         }
-        pixelFactors <- c("LATITUDE","LONGITUDE", "HYEAR")
+        pixelFactors <- c("LATITUDE","LONGITUDE", yearFactor)
         if ("SEASON" %in% colnames(calc_production)) {
-          pixelPopulationFactors <- c("LATITUDE","LONGITUDE","HYEAR","RUN_NAME","SEASON")
+          pixelPopulationFactors <- c("LATITUDE","LONGITUDE",yearFactor,"RUN_NAME","SEASON")
         } else {
-          pixelPopulationFactors <- c("LATITUDE","LONGITUDE","HYEAR","RUN_NAME")
+          pixelPopulationFactors <- c("LATITUDE","LONGITUDE",yearFactor,"RUN_NAME")
         }
         
         calc_production_pixel <- calc_production[,.(PRODUCTION = sum(PRODUCTION)), by = pixelFactors]
@@ -298,16 +313,16 @@ suppressWarnings(if (!is.na(totVariables)) {
         if (multiYearIgnFlg) {
           aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
         } else {
-          aggregated[, (header):= calc_production[,sum(get(header)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (header):= calc_production[,sum(get(header)), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
         }
         final[, (header):= aggregated[,get(header)]]
         
       } else if (variable == "HARVEST_AREA") {
-        aggregated[, (header):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+        aggregated[, (header):= calc_production[,sum(get(variable)), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
         final[, (header):= aggregated[,get(header)]]
       } else if (variable == "POPULATION") {
-        aggregated[, (header):= calc_production[,sum(get(variable)), by = populationFactors][,mean(V1), by = factors][,V1]]
-        final[, (header):= aggregated[,get(header)]]
+        # aggregated[, (header):= calc_production[,sum(get(variable)), by = populationFactors][,mean(V1), by = factors][,V1]]
+        final[, (header):= aggregated[,POPULATION]]
       } else {
         print(paste("Processing summary for",  variable, ", which is unsupported and skipped"))
       }
@@ -349,7 +364,7 @@ suppressWarnings(if (!is.na(avgVariables)) {
         if (multiYearIgnFlg) {
           aggregated[, (header):= calc_production[,sum(as.numeric(get(variable)) * HARVEST_AREA_PCT), by = factors][,V1]]
         } else {
-          aggregated[, (header):= calc_production[,sum(get(variable)* HARVEST_AREA)/sum(HARVEST_AREA), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (header):= calc_production[,sum(get(variable)* HARVEST_AREA)/sum(HARVEST_AREA), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
         }
         
         final[, (header):= aggregated[,get(header)]]
@@ -379,7 +394,7 @@ suppressWarnings(if (!is.na(totTonVariables)) {
         if (multiYearIgnFlg) {
           aggregated[, (header):= calc_production[,sum(get(header)), by = factors][,V1]]
         } else {
-          aggregated[, (header):= calc_production[,sum(get(header)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
+          aggregated[, (header):= calc_production[,sum(get(header)), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
         }
         final[, (header):= aggregated[,round(get(header)/1000, digits = 2)]]
         
