@@ -13,6 +13,7 @@ ADMLV5,text,,,sub-region4,,,,,
 ADMLVP,fraction,0,1,,,,,,
 ADMLV_INFO,text,,,admlv_info,,,,,
 POPULATION,number,0,,,population,,,,population
+TOTAL_WATER,m3,,,,total_water,,,,total water
 FILE,text,,,file,,,,,
 PYEAR,year,,,,,,,,
 HYEAR,year,,,year,,,,,

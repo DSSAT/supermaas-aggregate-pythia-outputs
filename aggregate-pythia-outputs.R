@@ -13,7 +13,7 @@ if (file.exists(data_cde_file)) {
   # const_date_vars <- c("SDAT", "PDAT", "EDAT", "ADAT", "MDAT", "HDAT")
 }
 
-predefined_vars <- c("PRODUCTION", "TIMESTAMP", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA")
+predefined_vars <- c("PRODUCTION", "TIMESTAMP", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "TOTAL_WATER")
 default_factors <- c("LATITUDE", "LONGITUDE", "HYEAR")
 population_threshold <- 0.95
 
@@ -242,6 +242,13 @@ suppressWarnings(if (!is.na(variables)) {
         aggregated[, (variable):= calc_production[,sum(get(variable)), by = c(unique(c(factors, "HYEAR")))][,mean(V1), by = factors][,V1]]
         # aggregated[, (variable):= calc_production[,mean(get(variable)), by = factors][,V1]]
         final[, crop_failure_area := aggregated[,round(get(variable), 2)]]
+      } else if (variable == "TOTAL_WATER") {
+        if (multiYearIgnFlg) {
+          aggregated[, (variable):= calc_production[,sum((PRCP + IRCM) * HARVEST_AREA), by = factors][,V1]]
+        } else {
+          aggregated[, (variable):= calc_production[,sum((PRCP + IRCM) * HARVEST_AREA), by = c(unique(c(factors, yearFactor)))][,mean(V1), by = factors][,V1]]
+        }
+        final[, total_water := aggregated[,get(variable)*10]]
       } else if (variable == "HUNGRY_PEOPLE") {
         if (!"PRODUCTION" %in% colnames(calc_production)) {
           calc_production[, PRODUCTION := HARVEST_AREA * HWAH]
