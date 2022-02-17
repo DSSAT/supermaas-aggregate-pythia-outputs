@@ -174,6 +174,11 @@ if ("PYEAR" %in% factors) {
 } else {
   yearFactor <- var_dic[factor == "year", name]
 }
+if ("LATE_SEASON" %in% colNames) {
+  print("Apply late season rules.")
+  commonDiff = valid_entries[,.(diff=HYEAR-PYEAR)][,.N,by=diff][N==max(N),diff][1]
+  valid_entries[LATE_SEASON==T, HYEAR:=PYEAR + commonDiff]
+}
 
 print("Starting aggregation.")
 # if (argv$period_annual) {
