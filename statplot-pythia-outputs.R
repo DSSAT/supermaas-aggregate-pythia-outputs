@@ -123,7 +123,7 @@ for (variable in variables) {
       plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, variable, sep=", ")
       variableInFile <- tolower(variable)
     }
-    var_dic[name==toupper(""), boxplot]
+    
     plotTitle <- str_wrap(plotTitle, 40)
     
     for (i in 1:ceiling(factorNum/maxBarNum)) {
@@ -145,7 +145,7 @@ for (variable in variables) {
               legend.title = element_text(size = 13)) +
         # theme(axis.text = element_text(size = 13)) +
         theme(axis.title = element_text(size = 13, face = "bold")) +
-        labs(x = "", y = variableInFile, colour = "Legend", title = plotTitle) +
+        labs(x = plotXVarHeader, y = variableInFile, colour = "Legend", title = plotTitle) +
         theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
         theme(panel.grid.minor = element_blank()) +
         theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
