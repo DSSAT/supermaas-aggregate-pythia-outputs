@@ -2,6 +2,7 @@
 library(argparser)
 library(data.table)
 library(raster)
+library(stringr)
 
 setwd(".")
 
@@ -63,6 +64,9 @@ p <- argparser::add_argument(p, "--grid_num", short="-g", default = 5, help=past
 p <- argparser::add_argument(p, "--max_adm_level", short="-l", default = 1, help=paste0("Provide the maximum admin level you want to reach, the higher level will consume more time to finish"))
 p <- argparser::add_argument(p, "--filter_variable", short="-v", nargs = 1, help=paste0("Provide the name of variable used for filter the final output"))
 p <- argparser::add_argument(p, "--filter_values", short="-u", nargs = Inf, help=paste0("Provide the values of variable used for filter the final output"))
+p <- argparser::add_argument(p, "--skip_scenario", short="-c", flag = TRUE, help=paste0("Skip the extraction for scenario information"))
+p <- argparser::add_argument(p, "--scenario_raw_column", short="-r", default = "RUN_NAME", help=paste0("Provide the column name which the raw scenario information located"))
+p <- argparser::add_argument(p, "--scenario_variables", short="-s", nargs = Inf, help=paste0("Provide the variable names used for scenarios, by default it will extract all pre-defined variables from RUN_NAME column"))
 argv <- argparser::parse_args(p)
 
 # for test only
@@ -70,7 +74,9 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case10\\pp_GGCMI_Maize_ir.csv", "-o", "-g", "6"))
 # argv <- argparser::parse_args(p, c("test\\data\\case12\\Maize_Belg", "-o", "-g", "6"))
 # argv <- argparser::parse_args(p, c("test\\data\\case16", "-o", "-g", "6", "-l", "2", "-v", "ADMLV0"))
-# argv <- argparser::parse_args(p, c("test\\data\\case18\\baseline\\pythia_out", "-o", "-g", "6", "-l", "2"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test2\\scenario\\pythia_out", "-o", "-g", "6", "-l", "2"))
+# argv <- argparser::parse_args(p, c("test\\data\\case19\\baseline\\pythia_out", "-o", "-g", "6", "-l", "2"))
+# argv <- argparser::parse_args(p, c("test\\data\\case21\\ETH_TF_2022_N", "-o", "-g", "6", "-l", "2"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 
@@ -81,6 +87,12 @@ maxAdmLv <- argv$max_adm_level
 fltVar <- argv$filter_variable
 fltValues <- argv$filter_values
 gadmShape <- NA
+isSkipScenario <- argv$skip_scenario
+scenarioColName <- argv$scenario_raw_column
+scenarioVars <- argv$scenario_variables
+if (!isSkipScenario && is.na(scenarioVars)) {
+  scenarioVars <- var_dic[scenario!="", name]
+}
 
 admVars <- paste0("ADMLV", 0:maxAdmLv)
 
@@ -148,6 +160,33 @@ for(f in flist) {
     cat("Caculating HARVEST_AREA ...")
     valid_entries[,`:=`(HARVEST_AREA = 1)]
     cat("done\n")
+  }
+  if (!isSkipScenario) {
+    cat("Caculating SCENARIO ...")
+    if (scenarioColName %in% colNames) {
+      extractScenarioInfo <- function(x) {
+        ret <- ""
+        for (scenarioVar in scenarioVars) {
+          locations <- str_locate_all(x, paste0("__", scenarioVar, "[-+]?\\d+"))
+          if (length(unlist(locations)) > 0) {
+            suppressWarnings(start <- unlist(lapply(locations, min)))
+            suppressWarnings(end <- unlist(lapply(locations, max)))
+            # strs <- str_replace(str_sub(x, start + 2, end), scenarioVar, paste0(var_dic[name==scenarioVar, scenario], " "))
+            strs <- paste0(var_dic[name==scenarioVar, scenario], " ", str_replace(paste0("+", str_sub(x, start + 2 + str_length(scenarioVar), end)), "\\+-", "-"))
+            if (ret == "") {
+              ret <- strs
+            } else {
+              ret <- paste(strs, sep = "__")
+            }
+          }
+        }
+        return(ret)
+      }
+      valid_entries[, SCENARIO := extractScenarioInfo(get(scenarioColName))]
+      cat("done\n")
+    } else {
+      cat(paste0("missing <", scenarioColName, "> column, skipped\n"))
+    }
   }
   if (!isSkipAdmlvl && (F %in% (admVars %in% colNames))) {
     cat("Caculating Admin Levels ...")

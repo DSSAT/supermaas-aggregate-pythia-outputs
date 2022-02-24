@@ -1,114 +1,117 @@
-name,unit,min,max,factor,total,average,total_ton,timeline,boxplot
-LATITUDE,degree,-90,90,lat,,,,,
-LONGITUDE,degree,-180,180,lng,,,,,
-SEASON,text,,,season,,,,,
-MGMT,,,,mgn,,,,,
-HARVEST_AREA,ha,0,,,HAREA_TOT,,,,harvest area
-ADMLV0,text,,,country,,,,,
-ADMLV1,text,,,region,,,,,
-ADMLV2,text,,,sub-region,,,,,
-ADMLV3,text,,,sub-region2,,,,,
-ADMLV4,text,,,sub-region3,,,,,
-ADMLV5,text,,,sub-region4,,,,,
-ADMLVP,fraction,0,1,,,,,,
-ADMLV_INFO,text,,,admlv_info,,,,,
-POPULATION,number,0,,,population,,,,population
-TOTAL_WATER,m3,,,,total_water,,,,total water
-FILE,text,,,file,,,,,
-PYEAR,year,,,planting_year,,,,,
-HYEAR,year,,,year,,,,,
-HMONTH,month,,,month,,,,,
-GSD,day,49,269,,,GSD_AVE,,,growing season
-ETFD,day,0,,,,ETFD_AVE,,,
-FTHD,day,0,,,,FTHD_AVE,,,
-RUN_NAME,text,,,run_name,,,,,
-RUNNO,text,,,,,,,,
-TRNO,text,,,,,,,,
-R#,text,,,,,,,,
-O#,text,,,,,,,,
-P#,text,,,,,,,,
-CR,text,,,crop,,,,,
-MODEL,text,,,,,,,,
-EXNAME,text,,,,,,,,
-TNAM,text,,,,,,,,
-FNAM,text,,,,,,,,
-WSTA,text,,,,,,,,
-SOIL_ID,text,,,,,,,,
-SDAT,date,,,,,SDAT_AVE,,,simulation start date
-PDAT,date,,,,,PDAT_AVE,,,planting date
-EDAT,date,,,,,EDAT_AVE,,,EDAT
-ADAT,date,,,,,ADAT_AVE,,,ADAT
-MDAT,date,,,,,MDAT_AVE,,,MDAT
-HDAT,date,,,date,,HDAT_AVE,,,harvest date
-DWAP,kg/ha,0,,,DWAP_TOT,DWAP_AVE,,,DWAP
-CWAM,kg/ha,0,,,CWAM_TOT,CWAM_AVE,BIOMASS_PRODUCTION,,biomass
-HWAM,kg/ha,0,,,HWAM_TOT,HWAM_AVE,,,yield
-HWAH,kg/ha,0,,,HWAH_TOT,HWAH_AVE,PRODUCTION,PRODUCTION,yield
-BWAH,kg/ha,0,,,BWAH_TOT,BWAH_AVE,,,BWAH
-PWAM,kg/ha,0,,,PWAM_TOT,PWAM_AVE,,,PWAM
-HWUM,g/unit,0,,,,,,,
-H#AM,number/m2,0,,,,,,,
-H#UM,number/unit,0,,,,,,,
-HIAM,index,0,0.7,,,HIAM_AVE,,,HIAM
-LAIX,index,0,1,,,LAIX_AVE,,,leaf index
-IR#M,number,0,,,,,,,
-IRCM,mm,0,,,,IRCM_AVE,,,IRCM
-PRCM,mm,0,,,,PRCM_AVE,,,PRCM
-ETCM,mm,0,,,,ETCM_AVE,,,ETCM
-EPCM,mm,0,,,,EPCM_AVE,,,EPCM
-ESCM,mm,0,,,,ESCM_AVE,,,ESCM
-ROCM,mm,0,,,,ROCM_AVE,,,ROCM
-DRCM,mm,0,,,,DRCM_AVE,,,DRCM
-SWXM,mm,0,,,,SWXM_AVE,,,SWXM
-NI#M,number,0,,,,,,,
-NICM,kg/ha,0,,,NICM_TOT,NICM_AVE,TOTAL_NITROGEN_APPLIED,,nitrogen applied
-NFXM,kg/ha,0,,,NFXM_TOT,NFXM_AVE,,,NFXM
-NUCM,kg/ha,0,,,NUCM_TOT,NUCM_AVE,,,NUCM
-NLCM,kg/ha,0,,,NLCM_TOT,NLCM_AVE,,,NLCM
-NIAM,kg/ha,0,,,NIAM_TOT,NIAM_AVE,,,NIAM
-NMINC,kg/ha,0,,,NMINC_TOT,NMINC_AVE,,,NMINC
-CNAM,kg/ha,0,,,CNAM_TOT,CNAM_AVE,,,CNAM
-GNAM,kg/ha,0,,,GNAM_TOT,GNAM_AVE,,,GNAM
-N2OEC,kg/ha,0,,,N2OEC_TOT,N2OEC_AVE,,,N2OEC
-PI#M,number,0,,,,,,,
-PICM,kg/ha,0,,,PICM_TOT,PICM_AVE,,,PICM
-PUPC,kg/ha,0,,,PUPC_TOT,PUPC_AVE,,,PUPC
-SPAM,kg/ha,0,,,SPAM_TOT,SPAM_AVE,,,SPAM
-KI#M,number,0,,,,,,,
-KICM,kg/ha,0,,,KICM_TOT,KICM_AVE,,,KICM
-KUPC,kg/ha,0,,,KUPC_TOT,KUPC_AVE,,,KUPC
-SKAM,kg/ha,0,,,SKAM_TOT,SKAM_AVE,,,SKAM
-RECM,kg/ha,0,,,RECM_TOT,RECM_AVE,,,RECM
-ONTAM,kg/ha,0,,,ONTAM_TOT,ONTAM_AVE,,,ONTAM
-ONAM,kg/ha,0,,,ONAM_TOT,ONAM_AVE,,,ONAM
-OPTAM,kg/ha,0,,,OPTAM_TOT,OPTAM_AVE,,,OPTAM
-OPAM,kg/ha,0,,,OPAM_TOT,OPAM_AVE,,,OPAM
-OCTAM,kg/ha,0,,,OCTAM_TOT,OCTAM_AVE,,,OCTAM
-OCAM,kg/ha,0,,,OCAM_TOT,OCAM_AVE,,,OCAM
-CO2EC,kg/ha,0,,,CO2EC_TOT,CO2EC_AVE,,,CO2EC
-DMPPM,kg/ha/mm,0,,,,,,,
-DMPEM,kg/ha/mm,0,,,,,,,
-DMPTM,kg/ha/mm,0,,,,,,,
-DMPIM,kg/ha/mm,0,,,,,,,
-YPPM,kg/ha/mm,0,,,,,,,
-YPEM,kg/ha/mm,0,,,,,,,
-YPTM,kg/ha/mm,0,,,,,,,
-YPIM,kg/ha/mm,0,,,,,,,
-DPNAM,kg/kg,0,,,,,,,
-DPNUM,kg/kg,0,,,,,,,
-YPNAM,kg/kg,0,,,,,,,
-YPNUM,kg/kg,0,,,,,,,
-NDCH,day,0,,,,,,,
-TMAXA,degree_c,,,,,,,,
-TMINA,degree_c,,,,,,,,
-SRADA,MJ/m2/d,0,,,,,,,
-DAYLA,hr/d,0,,,,,,,
-CO2A,ppm,0,,,,,,,
-PRCP,mm,0,,,PRCP_VOL_TOT,PRCP_AVE,,,rainfall
-ETCP,mm,0,,,,ETCP_AVE,,,ETCP
-ESCP,mm,0,,,,ESCP_AVE,,,ESCP
-EPCP,mm,0,,,,EPCP_AVE,,,EPCP
-CROP_PER_DROP,kg/ha/mm,,,,,,,,crop per drop
-CROP_PER_PERSON,kg/person,,,,,,,,crop per person
-PRODUCTION,ton,,,,,,,,production
-CROP_FAILURE_AREA,ha,,,,,,,,crop failure area
+name,unit,min,max,factor,total,average,total_ton,timeline,boxplot,scenario
+LATITUDE,degree,-90,90,lat,,,,,,
+LONGITUDE,degree,-180,180,lng,,,,,,
+SEASON,text,,,season,,,,,,
+MGMT,,,,mgn,,,,,,
+SCENARIO,text,,,scenario,,,,,,
+HARVEST_AREA,ha,0,,,HAREA_TOT,,,,harvest area,
+ADMLV0,text,,,country,,,,,,
+ADMLV1,text,,,region,,,,,,
+ADMLV2,text,,,sub-region,,,,,,
+ADMLV3,text,,,sub-region2,,,,,,
+ADMLV4,text,,,sub-region3,,,,,,
+ADMLV5,text,,,sub-region4,,,,,,
+ADMLVP,fraction,0,1,,,,,,,
+ADMLV_INFO,text,,,admlv_info,,,,,,
+POPULATION,number,0,,,population,,,,population,
+TOTAL_WATER,m3,,,,total_water,,,,total water,
+FILE,text,,,file,,,,,,
+PYEAR,year,,,planting_year,,,,,,
+HYEAR,year,,,year,,,,,,
+HMONTH,month,,,month,,,,,,
+GSD,day,49,269,,,GSD_AVE,,,growing season,
+ETFD,day,0,,,,ETFD_AVE,,,,
+FTHD,day,0,,,,FTHD_AVE,,,,
+RUN_NAME,text,,,run_name,,,,,,
+RUNNO,text,,,,,,,,,
+TRNO,text,,,,,,,,,
+R#,text,,,,,,,,,
+O#,text,,,,,,,,,
+P#,text,,,,,,,,,
+CR,text,,,crop,,,,,,
+MODEL,text,,,,,,,,,
+EXNAME,text,,,,,,,,,
+TNAM,text,,,,,,,,,
+FNAM,text,,,,,,,,,
+WSTA,text,,,,,,,,,
+SOIL_ID,text,,,,,,,,,
+SDAT,date,,,,,SDAT_AVE,,,simulation start date,
+PDAT,date,,,,,PDAT_AVE,,,planting date,
+EDAT,date,,,,,EDAT_AVE,,,EDAT,
+ADAT,date,,,,,ADAT_AVE,,,ADAT,
+MDAT,date,,,,,MDAT_AVE,,,MDAT,
+HDAT,date,,,date,,HDAT_AVE,,,harvest date,
+DWAP,kg/ha,0,,,DWAP_TOT,DWAP_AVE,,,DWAP,
+CWAM,kg/ha,0,,,CWAM_TOT,CWAM_AVE,BIOMASS_PRODUCTION,,biomass,
+HWAM,kg/ha,0,,,HWAM_TOT,HWAM_AVE,,,yield,
+HWAH,kg/ha,0,,,HWAH_TOT,HWAH_AVE,PRODUCTION,PRODUCTION,yield,
+BWAH,kg/ha,0,,,BWAH_TOT,BWAH_AVE,,,BWAH,
+PWAM,kg/ha,0,,,PWAM_TOT,PWAM_AVE,,,PWAM,
+HWUM,g/unit,0,,,,,,,,
+H#AM,number/m2,0,,,,,,,,
+H#UM,number/unit,0,,,,,,,,
+HIAM,index,0,0.7,,,HIAM_AVE,,,HIAM,
+LAIX,index,0,1,,,LAIX_AVE,,,leaf index,
+IR#M,number,0,,,,,,,,
+IRCM,mm,0,,,,IRCM_AVE,,,IRCM,
+PRCM,mm,0,,,,PRCM_AVE,,,PRCM,
+ETCM,mm,0,,,,ETCM_AVE,,,ETCM,
+EPCM,mm,0,,,,EPCM_AVE,,,EPCM,
+ESCM,mm,0,,,,ESCM_AVE,,,ESCM,
+ROCM,mm,0,,,,ROCM_AVE,,,ROCM,
+DRCM,mm,0,,,,DRCM_AVE,,,DRCM,
+SWXM,mm,0,,,,SWXM_AVE,,,SWXM,
+NI#M,number,0,,,,,,,,
+NICM,kg/ha,0,,,NICM_TOT,NICM_AVE,TOTAL_NITROGEN_APPLIED,,nitrogen applied,
+NFXM,kg/ha,0,,,NFXM_TOT,NFXM_AVE,,,NFXM,
+NUCM,kg/ha,0,,,NUCM_TOT,NUCM_AVE,,,NUCM,
+NLCM,kg/ha,0,,,NLCM_TOT,NLCM_AVE,,,NLCM,
+NIAM,kg/ha,0,,,NIAM_TOT,NIAM_AVE,,,NIAM,
+NMINC,kg/ha,0,,,NMINC_TOT,NMINC_AVE,,,NMINC,
+CNAM,kg/ha,0,,,CNAM_TOT,CNAM_AVE,,,CNAM,
+GNAM,kg/ha,0,,,GNAM_TOT,GNAM_AVE,,,GNAM,
+N2OEC,kg/ha,0,,,N2OEC_TOT,N2OEC_AVE,,,N2OEC,
+PI#M,number,0,,,,,,,,
+PICM,kg/ha,0,,,PICM_TOT,PICM_AVE,,,PICM,
+PUPC,kg/ha,0,,,PUPC_TOT,PUPC_AVE,,,PUPC,
+SPAM,kg/ha,0,,,SPAM_TOT,SPAM_AVE,,,SPAM,
+KI#M,number,0,,,,,,,,
+KICM,kg/ha,0,,,KICM_TOT,KICM_AVE,,,KICM,
+KUPC,kg/ha,0,,,KUPC_TOT,KUPC_AVE,,,KUPC,
+SKAM,kg/ha,0,,,SKAM_TOT,SKAM_AVE,,,SKAM,
+RECM,kg/ha,0,,,RECM_TOT,RECM_AVE,,,RECM,
+ONTAM,kg/ha,0,,,ONTAM_TOT,ONTAM_AVE,,,ONTAM,
+ONAM,kg/ha,0,,,ONAM_TOT,ONAM_AVE,,,ONAM,
+OPTAM,kg/ha,0,,,OPTAM_TOT,OPTAM_AVE,,,OPTAM,
+OPAM,kg/ha,0,,,OPAM_TOT,OPAM_AVE,,,OPAM,
+OCTAM,kg/ha,0,,,OCTAM_TOT,OCTAM_AVE,,,OCTAM,
+OCAM,kg/ha,0,,,OCAM_TOT,OCAM_AVE,,,OCAM,
+CO2EC,kg/ha,0,,,CO2EC_TOT,CO2EC_AVE,,,CO2EC,
+DMPPM,kg/ha/mm,0,,,,,,,,
+DMPEM,kg/ha/mm,0,,,,,,,,
+DMPTM,kg/ha/mm,0,,,,,,,,
+DMPIM,kg/ha/mm,0,,,,,,,,
+YPPM,kg/ha/mm,0,,,,,,,,
+YPEM,kg/ha/mm,0,,,,,,,,
+YPTM,kg/ha/mm,0,,,,,,,,
+YPIM,kg/ha/mm,0,,,,,,,,
+DPNAM,kg/kg,0,,,,,,,,
+DPNUM,kg/kg,0,,,,,,,,
+YPNAM,kg/kg,0,,,,,,,,
+YPNUM,kg/kg,0,,,,,,,,
+NDCH,day,0,,,,,,,,
+TMAXA,degree_c,,,,,,,,,
+TMINA,degree_c,,,,,,,,,
+SRADA,MJ/m2/d,0,,,,,,,,
+DAYLA,hr/d,0,,,,,,,,
+CO2A,ppm,0,,,,,,,,
+PRCP,mm,0,,,PRCP_VOL_TOT,PRCP_AVE,,,rainfall,
+ETCP,mm,0,,,,ETCP_AVE,,,ETCP,
+ESCP,mm,0,,,,ESCP_AVE,,,ESCP,
+EPCP,mm,0,,,,EPCP_AVE,,,EPCP,
+CROP_PER_DROP,kg/ha/mm,,,,,,,,crop per drop,
+CROP_PER_PERSON,kg/person,,,,,,,,crop per person,
+PRODUCTION,ton,,,,,,,,production,
+CROP_FAILURE_AREA,ha,,,,,,,,crop failure area,
+fen_tot,kg/ha,,,,,,,,,Fertilizer
+pfrst,day,,,,,,,,,Planting Window Shift
