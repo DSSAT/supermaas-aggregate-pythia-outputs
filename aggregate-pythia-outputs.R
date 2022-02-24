@@ -177,7 +177,6 @@ if ("PYEAR" %in% factors) {
 if ("LATE_SEASON" %in% colNames) {
   print("Apply late season rules.")
   commonDiff = valid_entries[,.(diff=HYEAR-PYEAR)][,.N,by=diff][N==max(N),diff][1]
-  valid_entries[LATE_SEASON==T, HYEAR:=PYEAR + commonDiff]
 }
 
 print("Starting aggregation.")
@@ -435,8 +434,9 @@ if ("month" %in% colnames(final)) {
 # if ("timestamp" %in% colnames(final) || !"year" %in% var_dic[name %in% factors, unit]) {
 #   final[, year:=NULL]
 # }
-
+cat(paste0("Save result to ", out_file), " ...")
 data.table::fwrite(final, file = out_file)
+cat("done\r\n")
 # }
 # if (argv$period_month) {
 #   #print("Processing monthly calculation.")
