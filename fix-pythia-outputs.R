@@ -172,7 +172,7 @@ for(f in flist) {
             suppressWarnings(start <- unlist(lapply(locations, min)))
             suppressWarnings(end <- unlist(lapply(locations, max)))
             # strs <- str_replace(str_sub(x, start + 2, end), scenarioVar, paste0(var_dic[name==scenarioVar, scenario], " "))
-            strs <- paste0(var_dic[name==scenarioVar, scenario], " ", str_replace(paste0("+", str_sub(x, start + 2 + str_length(scenarioVar), end)), "\\+-", "-"))
+            strs <- paste0(var_dic[name==scenarioVar, scenario], " ", str_replace(paste0("+", str_sub(x, start + 2 + str_length(scenarioVar), end)), "\\+-", "-"), var_dic[name==scenarioVar, " ", unit])
             if (ret == "") {
               ret <- strs
             } else {
