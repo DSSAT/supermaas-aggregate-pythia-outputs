@@ -165,7 +165,8 @@ if ("ADMLVP" %in% colNames) {
   }
   populationVars <- c(populationVars, "ADMLVP")
 }
-populationFactors <- unique(c(populationVars, factors))
+# populationFactors <- unique(c(populationVars, factors))
+populationFactors <- intersect(populationVars, factors)
 
 if ("PYEAR" %in% factors) {
   yearFactor <- "PYEAR"
@@ -210,8 +211,8 @@ if ("ADMLV0" %in% factors) {
 setnames(final, headers)
 
 # calculate the population
-population <- unique(calc_production[, POPULATION, by = populationFactors])[, .(POPULATION=sum(POPULATION)), by = factors]
-aggregated <- merge(aggregated, population, by = factors, sort = F)
+population <- unique(calc_production[, POPULATION, by = populationVars])[, .(POPULATION=sum(POPULATION)), by = populationFactors]
+aggregated <- merge(aggregated, population, by = populationFactors, sort = F)
 
 # execute predefined variable aggregation
 suppressWarnings(if (!is.na(variables)) {
