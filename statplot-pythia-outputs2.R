@@ -25,19 +25,23 @@ p <- argparser::add_argument(p, "input", "Aggregation result file, includes all 
 p <- argparser::add_argument(p, "output", "folder Path to generaete box plot graphs")
 p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable HEADER names for comparison, if not given, then comparing all non-factor columns"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "" & name != "SCENARIO", factor]), collapse=","), "]"))
+p <- argparser::add_argument(p, "--group", short="-g", nargs=1, help=paste0("Group name for sub-grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "" & name != "SCENARIO", factor]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--x_var", short = "-x", nargs = 1, default="SCENARIO", help = paste("Variable used for x-axit in plotting graph"))
 # p <- argparser::add_argument(p, "--max_bar_num", short="-n", default = 25, help = "Maximum number of box bar per graph")
 
 argv <- argparser::parse_args(p)
 
 # for test only
-# argv <- argparser::parse_args(p, c("test\\data\\case21\\ETH_MZ_2022_N\\analysis_out\\stage_8_admlv0.csv", "test\\data\\case21\\ETH_MZ_2022_N\\analysis_out\\images2", "-f", "ADMLV0"))
+# argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\stage_8_admlv0.csv", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images2", "-f", "ADMLV0", "-g", "SEASON"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_dir <- normalizePath(argv$output))
 
 variables <- argv$variables
 factors <- argv$factors
+group <- argv$group
+groupHeader <- var_dic[name == group, factor]
+
 # maxBarNum <- argv$max_bar_num
 maxBarNum <- 25
 plotXVar <- argv$x_var
@@ -83,7 +87,11 @@ suppressWarnings(if (is.na(variables)) {
 
 print("Generating boxplot graphs...")
 extension <- "png"
-xLaxAngel <- 90
+if (plotXVar == "SCENARIO") {
+  xLaxAngel <- 345
+} else {
+  xLaxAngel <- 90
+}
 plotDatas <- split(df, by=plotFactorHeaders, keep.by=FALSE, collapse="__")
 plotKeys <- names(plotDatas)
 
@@ -133,14 +141,18 @@ for (variable in variables) {
     for (i in 1:ceiling(factorNum/maxBarNum)) {
       
       plotSubData <- plotData[factor_id %in% (1 + (i-1) * maxBarNum) : (i*maxBarNum)]
-      plot <- ggplot(data = plotSubData, aes(x = get(plotXVarHeaderOrdered), y = get(variable))) +
-        geom_boxplot(
-          # aes(fill = HWAH),
+      if (!is.na(group)) {
+        plot <- ggplot(data = plotSubData, aes(x = get(plotXVarHeaderOrdered), y = get(variable), fill = get(groupHeader)))
+      } else {
+        plot <- ggplot(data = plotSubData, aes(x = get(plotXVarHeaderOrdered), y = get(variable)))
+      }
+      
+      plot <- plot +geom_boxplot(
           outlier.colour = NA,
           color = "darkgrey"
         )  +
         stat_boxplot(geom ='errorbar')+
-        geom_boxplot()+
+        # geom_boxplot()+
         
         coord_cartesian(ylim = range(df[,..variable])) +
         # theme_light() +
@@ -149,12 +161,16 @@ for (variable in variables) {
         # theme(axis.text = element_text(size = 13)) +
         theme(axis.title = element_text(size = 13, face = "bold")) +
         labs(x = plotXVarHeader, y = variableInFile, colour = "Legend", title = plotTitle) +
-        theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
+        theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 0)) +
         theme(panel.grid.minor = element_blank()) +
         theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
         theme(plot.title = element_text(size=20, face="bold", hjust = 0.5))
       
-      # scale_fill_manual(values=colors)
+      if (!is.na(group)) {
+        plot <- plot + theme(legend.text = element_text(size=8)) +
+          theme(legend.title = element_text(size=9, face="bold")) +
+          guides(fill=guide_legend(title=group))
+      }
       
       if (ceiling(factorNum/maxBarNum) == 1) {
         file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace_all(key, "\\.", "__"), ".", extension)
