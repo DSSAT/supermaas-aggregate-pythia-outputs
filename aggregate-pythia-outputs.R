@@ -178,6 +178,7 @@ if ("PYEAR" %in% factors) {
 if ("LATE_SEASON" %in% colNames) {
   print("Apply late season rules.")
   commonDiff = valid_entries[,.(diff=HYEAR-PYEAR)][,.N,by=diff][N==max(N),diff][1]
+  valid_entries[HYEAR-PYEAR!=commonDiff, HYEAR:=PYEAR + commonDiff]
 }
 
 print("Starting aggregation.")
