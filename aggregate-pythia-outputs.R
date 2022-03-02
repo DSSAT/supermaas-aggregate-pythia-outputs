@@ -121,6 +121,9 @@ if ("HWAH" %in% colNames) {
 if (!"HYEAR" %in% colNames) {
   valid_entries[,`:=`(HYEAR = trunc(HDAT/1000))]
 }
+if (!"SYEAR" %in% colNames) {
+  valid_entries[,`:=`(SYEAR = trunc(SDAT/1000))]
+}
 if (!"HMONTH" %in% colNames) {
   valid_entries[,HMONTH:=format(as.Date(paste0(HDAT), "%Y%j"), "%m")]
 }
@@ -177,8 +180,8 @@ if ("PYEAR" %in% factors) {
 }
 if ("LATE_SEASON" %in% colNames) {
   print("Apply late season rules.")
-  commonDiff = valid_entries[,.(diff=HYEAR-PYEAR)][,.N,by=diff][N==max(N),diff][1]
-  valid_entries[HYEAR-PYEAR!=commonDiff, HYEAR:=PYEAR + commonDiff]
+  commonDiff = valid_entries[,.(diff=HYEAR-WYEAR)][,.N,by=diff][N==max(N),diff][1]
+  valid_entries[HYEAR-WYEAR!=commonDiff, HYEAR:=WYEAR + commonDiff]
 }
 
 print("Starting aggregation.")
