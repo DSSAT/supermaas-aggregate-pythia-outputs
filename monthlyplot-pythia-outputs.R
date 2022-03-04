@@ -3,6 +3,7 @@ library(argparser)
 library(data.table)
 library(ggplot2)
 library(stringr)
+library(ggthemes)
 
 setwd(".")
 
@@ -133,6 +134,7 @@ for (variable in variables) {
       # scale_x_continuous(breaks = seq(1, 12, by = 1)) +
       scale_y_continuous(breaks = seq(0, max(df[,..variable]), by = signif(max(df[,..variable])/10, 1))) +
       
+      scale_fill_colorblind() +
       # theme_light() +
       theme(legend.text = element_text(size = 13),
             legend.title = element_text(size = 13)) +

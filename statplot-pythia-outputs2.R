@@ -3,6 +3,7 @@ library(argparser)
 library(data.table)
 library(ggplot2)
 library(stringr)
+library(ggthemes)
 
 setwd(".")
 
@@ -152,6 +153,7 @@ for (variable in variables) {
           color = "darkgrey"
         )  +
         stat_boxplot(geom ='errorbar')+
+        scale_fill_colorblind() +
         # geom_boxplot()+
         
         coord_cartesian(ylim = range(df[,..variable])) +
