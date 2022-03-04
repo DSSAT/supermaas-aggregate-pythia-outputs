@@ -110,6 +110,9 @@ colNames <- colnames(valid_entries)
 # if ("ADAT" %in% colNames) {
 #   valid_entries <- valid_entries[!is.na(as.Date(paste0(ADAT), "%Y%j"))]
 # }
+if ("PDAT" %in% colNames) {
+  valid_entries <- valid_entries[!is.na(as.Date(paste0(PDAT), "%Y%j"))]
+}
 if ("HDAT" %in% colNames) {
   valid_entries <- valid_entries[!is.na(as.Date(paste0(HDAT), "%Y%j"))]
 }
