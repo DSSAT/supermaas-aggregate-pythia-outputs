@@ -1,7 +1,7 @@
 #library(here)
 library(argparser)
 library(data.table)
-library(raster)
+# library(raster)
 
 setwd(".")
 
@@ -51,9 +51,6 @@ argv <- argparser::parse_args(p)
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
-
-#in_dir <- here("work", "fen_tot0")
-#out_file <- here("work", "wmout.csv")
 
 variables <- argv$variables
 totVariables <- argv$total
