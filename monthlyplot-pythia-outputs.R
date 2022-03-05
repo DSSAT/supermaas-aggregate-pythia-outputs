@@ -102,22 +102,30 @@ for (variable in variables) {
     }
     
     if (var_dic[average==variable, .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly average ", var_dic[average==variable, boxplot], " (", var_dic[average==variable, unit], ")"), sep=", ")
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly average ", var_dic[average==variable, boxplot]), sep=", ")
       variableInFile <- paste0("monthly average ", var_dic[average==variable, boxplot])
+      unitStr <- paste0(" (", var_dic[average==variable, unit], ")")
     } else if (var_dic[total==variable, .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly total ", var_dic[total==variable, boxplot], " (", str_replace_all(var_dic[total==variable, unit], "/ha", ""), ")"), sep=", ")
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly total ", var_dic[total==variable, boxplot]), sep=", ")
       variableInFile <- paste0("monthly total ", var_dic[total==variable, boxplot])
+      unitStr <- paste0(" (", str_replace_all(var_dic[total==variable, unit], "/ha", ""), ")")
     } else if (var_dic[total_ton==variable, .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly total ", var_dic[total_ton==variable, boxplot], " (ton)"), sep=", ")
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly total ", var_dic[total_ton==variable, boxplot]), sep=", ")
       variableInFile <- paste0("monthly total ", var_dic[total_ton==variable, boxplot])
+      unitStr <- paste0(" (ton)")
     } else if (var_dic[name==toupper(variable), .N] > 0) {
-      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly ",var_dic[name==toupper(variable), boxplot], " (", var_dic[name==toupper(variable), unit], ")"), sep=", ")
+      plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly ",var_dic[name==toupper(variable), boxplot]), sep=", ")
       variableInFile <- paste0("monthly ", var_dic[name==toupper(variable), boxplot])
+      unitStr <- paste0(" (", var_dic[name==toupper(variable), unit], ")")
     } else {
       plotTitle <- paste(str_replace_all(key, "\\.", "_"), crop, paste0("monthly ", variable), sep=", ")
       variableInFile <- paste0("monthly ", tolower(variable))
+      unitStr <- ""
     }
-    plotTitle <- str_wrap(plotTitle, 40)
+    plotTitle <- str_wrap(plotTitle, 50)
+    if (length(unlist(str_locate_all(plotTitle, "\n"))) == 0) {
+      plotTitle <- paste0(plotTitle, "\n")
+    }
     
     if (!is.na(group)) {
       plot <- ggplot(data = plotData, aes(x = month, y = get(variable), fill = get(groupHeader)))
@@ -141,11 +149,11 @@ for (variable in variables) {
       theme(legend.text = element_text(size = 13),
             legend.title = element_text(size = 13)) +
       theme(axis.title = element_text(size = 13, face = "bold")) +
-      labs(x = "Month", y = variableInFile, colour = "Legend", title = plotTitle) +
+      labs(x = "Month", y = paste0(variableInFile, unitStr), colour = "Legend", title = plotTitle) +
       theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
       theme(panel.grid.minor = element_blank()) +
       theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
-      theme(plot.title = element_text(size=20, face="bold", hjust = 0.5))
+      theme(plot.title = element_text(size=18, face="bold", hjust = 0.5))
     
     if (groupNum <= 8) {
       plot <- plot + scale_fill_manual(values=cbPalette9, drop=F)
