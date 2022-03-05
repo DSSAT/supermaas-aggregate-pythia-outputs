@@ -3,7 +3,6 @@ library(argparser)
 library(data.table)
 library(ggplot2)
 library(stringr)
-library(ggthemes)
 
 setwd(".")
 
@@ -86,6 +85,11 @@ if (!is.na(group)) {
 plotDatas <- split(df, by=plotFactorHeaders, keep.by=FALSE, collapse="__")
 plotKeys <- names(plotDatas)
 
+groupNum <- length(levels(df[,get(groupHeader)]))
+cbPalette9 <-  c("#D55E00", "#0072B2", "#F0E442", "#009E73", "#56B4E9", "#E69F00", "#CC79A7", "#000000", "#FFFFFF")
+cbPalette10 <- c('#88CCEE', '#44AA99', '#117733', '#332288', '#DDCC77', '#999933', '#CC6677', '#882255', '#AA4499', '#DDDDDD')
+cbPalette11 <- c("#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026")
+
 for (variable in variables) {
   for (key in plotKeys) {
     print(paste0("Processing ", variable, " for ", key))
@@ -123,18 +127,16 @@ for (variable in variables) {
     
     plot <- plot + geom_boxplot(
         # color = "darkgray",  
-        outlier.size = 0.3,
-        lwd = 0.3
+        outlier.size = 0.1,
+        lwd = 0.1
       )  +
       stat_boxplot(geom ='errorbar',
                    # color = "darkgray",
-                   size = 0.3) +
-      
+                   size = 0.1) +
       coord_cartesian(ylim = range(df[,..variable])) +
       # scale_x_continuous(breaks = seq(1, 12, by = 1)) +
       scale_y_continuous(breaks = seq(0, max(df[,..variable]), by = signif(max(df[,..variable])/10, 1))) +
       
-      scale_fill_colorblind() +
       # theme_light() +
       theme(legend.text = element_text(size = 13),
             legend.title = element_text(size = 13)) +
@@ -144,6 +146,14 @@ for (variable in variables) {
       theme(panel.grid.minor = element_blank()) +
       theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
       theme(plot.title = element_text(size=20, face="bold", hjust = 0.5))
+    
+    if (groupNum <= 8) {
+      plot <- plot + scale_fill_manual(values=cbPalette9, drop=F)
+    } else if (groupNum <= 10) {
+      plot <- plot + scale_fill_manual(values=cbPalette10, drop=F)
+    } else if (groupNum <= 11) {
+      plot <- plot + scale_fill_manual(values=cbPalette11, drop=F)
+    }
     
     if (!is.na(group)) {
       plot <- plot + theme(legend.text = element_text(size=5)) +

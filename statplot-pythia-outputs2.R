@@ -93,25 +93,31 @@ if (plotXVar == "SCENARIO") {
 } else {
   xLaxAngel <- 90
 }
+
+rows <- unique(df[,c(..plotXVarHeader)])
+rows[,factor_id:=1:rows[,.N]]
+df <- merge(df, rows, by=c(plotXVarHeader), all=T, sort=F)
+factorNum <- rows[,.N]
+
+if (class(df[,get(plotXVarHeader)]) != "character") {
+  df[,(plotXVarHeader):=as.character(get(plotXVarHeader))]
+}
+
+df[,(plotXVarHeaderOrdered) := factor(get(plotXVarHeader), levels=unique(df[,get(plotXVarHeader)]))]
+df[,(groupHeader) := factor(get(groupHeader), levels=unique(df[,get(groupHeader)]))]
+
 plotDatas <- split(df, by=plotFactorHeaders, keep.by=FALSE, collapse="__")
 plotKeys <- names(plotDatas)
+
+groupNum <- length(levels(df[,get(groupHeader)]))
+cbPalette9 <-  c("#D55E00", "#0072B2", "#F0E442", "#009E73", "#56B4E9", "#E69F00", "#CC79A7", "#000000", "#FFFFFF")
+cbPalette10 <- c('#88CCEE', '#44AA99', '#117733', '#332288', '#DDCC77', '#999933', '#CC6677', '#882255', '#AA4499', '#DDDDDD')
+cbPalette11 <- c("#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026")
 
 for (variable in variables) {
   for (key in plotKeys) {
     print(paste0("Processing ", variable, " for ", key))
     plotData <- plotDatas[key][[1]]
-    rows <- unique(plotData[,c(..plotXVarHeader)])
-    
-    rows[,factor_id:=1:rows[,.N]]
-    plotData <- merge(plotData, rows, by=c(plotXVarHeader), all=T)
-    factorlist <- rows
-    setcolorder(factorlist, c("factor_id", plotXVarHeader))
-
-    factorNum <- factorlist[,.N]
-    if (class(plotData[,get(plotXVarHeader)]) != "character") {
-      plotData[,(plotXVarHeader):=as.character(get(plotXVarHeader))]
-    }
-    plotData[,(plotXVarHeaderOrdered) := factor(get(plotXVarHeader), levels=rows[,get(plotXVarHeader)])]
     
     # Title rule: factors list, crop name, variable name (e.g. average yield)
     if (var_dic[name=="CR", factor] %in% colnames(plotData)) {
@@ -150,12 +156,12 @@ for (variable in variables) {
       
       plot <- plot +geom_boxplot(
           outlier.colour = NA,
-          color = "darkgrey"
+          color = "darkgrey",
+          outlier.size = 0.2,
+          lwd = 0.2
         )  +
-        stat_boxplot(geom ='errorbar')+
-        scale_fill_colorblind() +
-        # geom_boxplot()+
-        
+        stat_boxplot(geom ='errorbar',
+                     size = 0.2)+
         coord_cartesian(ylim = range(df[,..variable])) +
         # theme_light() +
         theme(legend.text = element_text(size = 13),
@@ -167,6 +173,14 @@ for (variable in variables) {
         theme(panel.grid.minor = element_blank()) +
         theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
         theme(plot.title = element_text(size=20, face="bold", hjust = 0.5))
+      
+      if (groupNum <= 8) {
+        plot <- plot + scale_fill_manual(values=cbPalette9, drop=F)
+      } else if (groupNum <= 10) {
+        plot <- plot + scale_fill_manual(values=cbPalette10, drop=F)
+      } else if (groupNum <= 11) {
+        plot <- plot + scale_fill_manual(values=cbPalette11, drop=F)
+      }
       
       if (!is.na(group)) {
         plot <- plot + theme(legend.text = element_text(size=8)) +
