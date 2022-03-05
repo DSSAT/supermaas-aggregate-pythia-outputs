@@ -147,7 +147,7 @@ for (variable in variables) {
       unitStr <- ""
     }
     
-    plotTitle <- str_wrap(plotTitle, 40)
+    plotTitle <- str_wrap(plotTitle, 45)
     if (length(unlist(str_locate_all(plotTitle, "\n"))) == 0) {
       plotTitle <- paste0(plotTitle, "\n")
     }
