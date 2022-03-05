@@ -205,13 +205,6 @@
       "Repository": "CRAN",
       "Hash": "a04dadf9f113eaa67c179ec7011034e7"
     },
-    "ggthemes": {
-      "Package": "ggthemes",
-      "Version": "4.2.4",
-      "Source": "Repository",
-      "Repository": "CRAN",
-      "Hash": "617fb2c300f68e8b1ba21043fba88fd7"
-    },
     "glue": {
       "Package": "glue",
       "Version": "1.4.2",

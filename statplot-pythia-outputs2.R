@@ -3,7 +3,6 @@ library(argparser)
 library(data.table)
 library(ggplot2)
 library(stringr)
-library(ggthemes)
 
 setwd(".")
 
