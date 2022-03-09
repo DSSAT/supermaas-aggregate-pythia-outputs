@@ -41,8 +41,8 @@ if (!argv$output_type %in% supportFileTypes) {
   stop(sprintf("Output %s is not supported.", argv$output_type))
 }
 
-if (file.exists(out_file) && !endsWith(tolower(out_file), extension)) {
-  stop(sprintf("%s does not match with the file type you requested", out_file))
+if (file_test("-f", out_file) && !endsWith(tolower(out_file), extension)) {
+  stop(sprintf("Output file name %s does not match with the file type you requested", basename(out_file)))
 }
 
 if (endsWith(tolower(out_file), extension)) {
