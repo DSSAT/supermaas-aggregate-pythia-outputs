@@ -78,7 +78,25 @@ suppressWarnings(if (is.na(variables)) {
 print("Generating boxplot graphs...")
 extension <- "png"
 xLaxAngel <- 0
+
 df[,month := factor(as.character(df[,month]), levels="1":"12")]
+groupUnit <- ""
+if (group == "SCENARIO") {
+  cnt <- 0
+  groupHeader2 <- ""
+  for (subGroupName in var_dic[scenario!="", scenario]) {
+    locations <- str_locate_all(unique(df[,get(groupHeader)]), subGroupName)
+    if (length(unlist(locations)) > 0) {
+      cnt <- cnt + 1
+      groupHeader2 <- subGroupName
+      groupUnit <- var_dic[scenario==groupHeader2,unit]
+    }
+  }
+  if (cnt == 1) {
+    df[, (groupHeader2) := str_replace(str_replace(df[,get(groupHeader)], paste0(groupHeader2, " "), ""), paste0(" ", groupUnit), "")]
+    groupHeader <- groupHeader2
+  }
+}
 if (!is.na(group)) {
   df[,(groupHeader) := factor(get(groupHeader), levels=unique(df[,get(groupHeader)]))]
 }
@@ -122,6 +140,11 @@ for (variable in variables) {
       variableInFile <- paste0("monthly ", tolower(variable))
       unitStr <- ""
     }
+    if (groupUnit != "") {
+      groupUnitStr <- paste0(" (", groupUnit, ")")
+    } else {
+      groupUnitStr <- ""
+    }
     plotTitle <- str_wrap(plotTitle, 50)
     if (length(unlist(str_locate_all(plotTitle, "\n"))) == 0) {
       plotTitle <- paste0(plotTitle, "\n")
@@ -151,6 +174,7 @@ for (variable in variables) {
       theme(axis.title = element_text(size = 13, face = "bold")) +
       labs(x = "Month", y = paste0(variableInFile, unitStr), colour = "Legend", title = plotTitle) +
       theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 1)) +
+      theme(axis.text.y = element_text(size = 6)) +
       theme(panel.grid.minor = element_blank()) +
       theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
       theme(plot.title = element_text(size=18, face="bold", hjust = 0.5))
@@ -165,8 +189,8 @@ for (variable in variables) {
     
     if (!is.na(group)) {
       plot <- plot + theme(legend.text = element_text(size=5)) +
-        theme(legend.title = element_text(size=6, face="bold")) +
-        guides(fill=guide_legend(title=group))
+        theme(legend.title = element_text(size=5, face="bold")) +
+        guides(fill=guide_legend(title=str_wrap(paste0(groupHeader, groupUnitStr), 15)))
     }
     
     file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace_all(key, "\\.", "__"), ".", extension)

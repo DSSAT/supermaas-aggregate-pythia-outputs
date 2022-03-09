@@ -98,6 +98,25 @@ rows[,factor_id:=1:rows[,.N]]
 df <- merge(df, rows, by=c(plotXVarHeader), all=T, sort=F)
 factorNum <- rows[,.N]
 
+plotXVarUnit <- ""
+if (plotXVar == "SCENARIO") {
+  cnt <- 0
+  plotXVarHeader2 <- ""
+  for (subGroupName in var_dic[scenario!="", scenario]) {
+    locations <- str_locate_all(unique(df[,get(plotXVarHeader)]), subGroupName)
+    if (length(unlist(locations)) > 0) {
+      cnt <- cnt + 1
+      plotXVarHeader2 <- subGroupName
+      plotXVarUnit <- var_dic[scenario==plotXVarHeader2,unit]
+    }
+  }
+  if (cnt == 1) {
+    df[, (plotXVarHeader2) := str_replace(str_replace(df[,get(plotXVarHeader)], paste0(plotXVarHeader2, " "), ""), paste0(" ", plotXVarUnit), "")]
+    plotXVarHeader <- plotXVarHeader2
+    xLaxAngel <- 0
+  }
+}
+
 if (class(df[,get(plotXVarHeader)]) != "character") {
   df[,(plotXVarHeader):=as.character(get(plotXVarHeader))]
 }
@@ -146,6 +165,11 @@ for (variable in variables) {
       variableInFile <- tolower(variable)
       unitStr <- ""
     }
+    if (plotXVarUnit != "") {
+      plotXVarUnitStr <- paste0(" (", plotXVarUnit, ")")
+    } else {
+      plotXVarUnitStr <- ""
+    }
     
     plotTitle <- str_wrap(plotTitle, 45)
     if (length(unlist(str_locate_all(plotTitle, "\n"))) == 0) {
@@ -175,7 +199,7 @@ for (variable in variables) {
               legend.title = element_text(size = 13)) +
         # theme(axis.text = element_text(size = 13)) +
         theme(axis.title = element_text(size = 13, face = "bold")) +
-        labs(x = plotXVarHeader, y = paste0(variableInFile, unitStr), colour = "Legend", title = plotTitle) +
+        labs(x = paste0(plotXVarHeader, plotXVarUnitStr), y = paste0(variableInFile, unitStr), colour = "Legend", title = plotTitle) +
         theme(axis.text.x = element_text(angle = xLaxAngel, vjust = 0.5, hjust = 0)) +
         theme(panel.grid.minor = element_blank()) +
         theme(plot.margin = unit(c(1, 1, 1, 1), "mm")) +
