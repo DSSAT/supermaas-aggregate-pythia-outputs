@@ -26,13 +26,14 @@ p <- argparser::add_argument(p, "output", "Output directory for monthly plot")
 p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable HEADER names for plot, if not given, then plotting all non-factor columns"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor!="", factor]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--group", short="-g", nargs=1, help=paste0("Group name for sub-grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "", factor]), collapse=","), "]"))
+p <- argparser::add_argument(p, "--same_y_scale", short="-i", flag = TRUE, help=paste0("Flag to apply same scale setup on y axis among the plots"))
 
 argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\agg_result_monthly\\agg_base_monthly_production_Ghana", "test\\data\\case17\\agg_result_monthly\\", "-f","ADMLV0"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\test\\baseline\\analysis_out\\stage_14_admlv1.csv", "test\\data\\case18\\test\\baseline\\analysis_out\\images", "-f","ADMLV1"))
-# argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_pdss\\stage_14_admlv0.csv", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images2", "-f", "ADMLV0", "-g", "SCENARIO"))
+# argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_pdss\\stage_14_admlv0.csv", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images2_debug", "-f", "ADMLV0", "-g", "SCENARIO"))
 
 suppressWarnings(in_file <- normalizePath(argv$input))
 suppressWarnings(out_dir <- normalizePath(argv$output))
@@ -41,6 +42,7 @@ variables <- argv$variables
 factors <- argv$factors
 group <- argv$group
 groupHeader <- var_dic[name == group, factor]
+isSameYScale <- argv$same_y_scale
 
 if (!dir.exists(in_file) && !file.exists(in_file)) {
   stop(sprintf("%s does not exist.", in_file))
@@ -163,12 +165,20 @@ for (variable in variables) {
       )  +
       stat_boxplot(geom ='errorbar',
                    # color = "darkgray",
-                   size = 0.1) +
-      coord_cartesian(ylim = range(df[,..variable])) +
-      # scale_x_continuous(breaks = seq(1, 12, by = 1)) +
-      scale_y_continuous(breaks = seq(0, max(df[,..variable]), by = signif(max(df[,..variable])/10, 1))) +
-      
-      # theme_light() +
+                   size = 0.1)
+    if (isSameYScale) {
+      plot <- plot + coord_cartesian(ylim = range(df[,..variable])) +
+        scale_y_continuous(breaks = seq(0, max(df[,..variable]), by = signif(max(df[,..variable])/10, 1)))
+    } else {
+      if (!F %in% (range(plotData[,..variable]) == 0)) {
+        plot <- plot + coord_cartesian(ylim = range(c(0, 10))) +
+          scale_y_continuous(breaks = seq(0, 10, by = 5))
+      } else {
+        plot <- plot + coord_cartesian(ylim = range(plotData[,..variable])) +
+          scale_y_continuous(breaks = seq(0, max(plotData[,..variable]), by = signif(max(plotData[,..variable])/10, 1)))
+      }
+    }
+    plot <- plot + 
       theme(legend.text = element_text(size = 13),
             legend.title = element_text(size = 13)) +
       theme(axis.title = element_text(size = 13, face = "bold")) +

@@ -27,12 +27,13 @@ p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help =
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "" & name != "SCENARIO", factor]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--group", short="-g", nargs=1, help=paste0("Group name for sub-grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "" & name != "SCENARIO", factor]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--x_var", short = "-x", nargs = 1, default="SCENARIO", help = paste("Variable used for x-axit in plotting graph"))
+p <- argparser::add_argument(p, "--same_y_scale", short="-i", flag = TRUE, help=paste0("Flag to apply same scale setup on y axis among the plots"))
 # p <- argparser::add_argument(p, "--max_bar_num", short="-n", default = 25, help = "Maximum number of box bar per graph")
 
 argv <- argparser::parse_args(p)
 
 # for test only
-# argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\stage_8_admlv0.csv", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images2", "-f", "ADMLV0", "-g", "SEASON"))
+# argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\stage_8_admlv1.csv", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images_debug", "-f", "ADMLV1", "-g", "SEASON"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_dir <- normalizePath(argv$output))
@@ -41,6 +42,7 @@ variables <- argv$variables
 factors <- argv$factors
 group <- argv$group
 groupHeader <- var_dic[name == group, factor]
+isSameYScale <- argv$same_y_scale
 
 # maxBarNum <- argv$max_bar_num
 maxBarNum <- 25
@@ -185,16 +187,24 @@ for (variable in variables) {
         plot <- ggplot(data = plotSubData, aes(x = get(plotXVarHeaderOrdered), y = get(variable)))
       }
       
-      plot <- plot +geom_boxplot(
-          outlier.colour = NA,
+      plot <- plot + geom_boxplot(
+          outlier.colour = "black",
           color = "darkgrey",
           outlier.size = 0.2,
           lwd = 0.2
         )  +
         stat_boxplot(geom ='errorbar',
-                     size = 0.2)+
-        coord_cartesian(ylim = range(df[,..variable])) +
-        # theme_light() +
+                     size = 0.2)
+      if (isSameYScale) {
+        plot <- plot + coord_cartesian(ylim = range(df[,..variable]))
+      } else {
+        if (!F %in% (range(plotSubData[,..variable]) == 0)) {
+          plot <- plot + coord_cartesian(ylim = range(c(0, 10)))
+        } else {
+          plot <- plot + coord_cartesian(ylim = range(plotSubData[,..variable]))
+        }
+      }
+      plot <- plot + 
         theme(legend.text = element_text(size = 13),
               legend.title = element_text(size = 13)) +
         # theme(axis.text = element_text(size = 13)) +
