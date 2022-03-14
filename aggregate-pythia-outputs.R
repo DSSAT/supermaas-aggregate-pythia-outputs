@@ -26,6 +26,7 @@ p <- argparser::add_argument(p, "--average", short="-a", nargs=Inf, help=paste0(
 p <- argparser::add_argument(p, "--total_ton", short="-o", nargs=Inf, help=paste0("Variable names for summary aggregation with unit of ton and round to integer: [", paste(var_dic[total_ton!="",name], collapse=","), "]"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for aggregation: [", paste(unique(var_dic[factor!="", name]), collapse=","), "]"))
 # p <- argparser::add_argument(p, "--gadm_path", short="-g", default = "gadm_shapes", nargs=Inf, help="Path to the GADM shape file forlder")
+p <- argparser::add_argument(p, "--lookup_data", short="-d", nargs=1, help="Path to the file which contains the lookup data, like population")
 p <- argparser::add_argument(p, "--crop_failure_threshold", short="-c", default = 100, nargs=Inf, help="Threshold to determine if the crop is failure, (kg/ha)")
 p <- argparser::add_argument(p, "--low_production_per_person_threshold", short="-l", default = 100, nargs=Inf, help="Threshold to determine if the production per person is low, (kg/person)")
 p <- argparser::add_argument(p, "--ignore_multiyear_sum_to_average", short="-i", flag = TRUE, help=paste0("Flag to disable the handling for getting average value against values from multi-years"))
@@ -52,13 +53,19 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\scenario", "test\\data\\case17\\agg_result\\agg_crop_per_person_drop_scenario_pixel.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","LONGITUDE", "LATITUDE", "HYEAR", "CR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\baseline\\pythia_out\\pp_GHA_ALL.csv", "test\\data\\case18\\baseline\\debug\\agg_crop_per_person_drop_scenario_pixel.csv", "-v", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-a", "HWAH", "-f","LONGITUDE", "LATITUDE", "HYEAR", "CR"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\scenario\\pythia_out", "test\\data\\case18\\test\\scenario\\analysis_out\\stage_14_admlv2.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "RUN_NAME", "HYEAR"))
-# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_2_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR","RUN_NAME", "HYEAR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test8\\baseline\\pythia_out", "test\\data\\case18\\test8\\baseline\\analysis_out\\stage_2_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR","RUN_NAME", "HYEAR", "-l", "200"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_3_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR", "HYEAR", "-l", "200"))
-# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_5_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR", "-l", "200"))
-# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_14_admlv0_1.csv", "-v", "PRODUCTION", "-f","ADMLV0", "HMONTH", "HYEAR", "CR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_5_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "POPULATION", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test4\\baseline\\pythia_out", "test\\data\\case18\\test8\\baseline\\analysis_out\\stage_14_admlv0_1.csv", "-v", "PRODUCTION", "-f","ADMLV0", "HMONTH", "HYEAR", "CR"))
+# argv <- argparser::parse_args(p, c("test\\data\\case19\\baseline\\pythia_out", "test\\data\\case19\\baseline\\analysis_out\\stage_4.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR", "RUN_NAME", "SEASON", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case20\\baseline\\pythia_out", "test\\data\\case20\\baseline\\analysis_out\\stage_2.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR","RUN_NAME", "HYEAR", "SEASON", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case18\\test8\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_5_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "POPULATION", "-o", "NICM", "-a", "HWAM", "-f", "ADMLV0", "CR","RUN_NAME", "HYEAR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case21\\pythia_out\\ETH_MZ_2022_pdss", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_pdss\\debug\\stage_7_admlv0.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "CR","MGMT", "HYEAR", "SEASON", "SCENARIO", "-l", "200","-d","test\\data\\case21\\lookup_data\\ETH_population_admlv2.csv"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
+lookup_file <- argv$lookup_data
+suppressWarnings(if (!is.na(lookup_file)) {lookup_file <- normalizePath(lookup_file)})
 
 variables <- argv$variables
 totVariables <- argv$total
@@ -86,6 +93,13 @@ out_dir <- dirname(out_file)
 if (!dir.exists(out_dir)) {
   dir.create(out_dir, recursive = TRUE)
 }
+
+lookupData <- NA
+suppressWarnings(if(!is.na(lookup_file)) {
+  if (file.exists(lookup_file)) {
+    lookupData <- data.table::fread((lookup_file))
+  }
+})
 
 flist <- list()
 dts <- list()
@@ -218,7 +232,14 @@ if ("ADMLV0" %in% factors) {
 setnames(final, headers)
 
 # calculate the population
-population <- unique(calc_production[, POPULATION, by = populationVars])[, .(POPULATION=sum(POPULATION)), by = populationFactors]
+if (!is.na(lookupData) && !F %in% (c(populationFactors, "POPULATION") %in% colnames(lookupData))) {
+  print("Apply population data from lookup table instead of original Pythia output")
+  population <- lookupData[,.(POPULATION=sum(POPULATION)), by = populationFactors]
+} else {
+  print(paste0("Try to apply the population data, but require it come with <", paste0(populationFactors, collapse = ","), ">"))
+  print("Will use the population data from original Pythia output")
+  population <- unique(calc_production[, POPULATION, by = populationVars])[, .(POPULATION=sum(POPULATION)), by = populationFactors]
+}
 aggregated <- merge(aggregated, population, by = populationFactors, sort = F)
 
 # execute predefined variable aggregation
