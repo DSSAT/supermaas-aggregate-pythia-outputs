@@ -167,12 +167,18 @@ for(f in flist) {
       extractScenarioInfo <- function(x) {
         ret <- ""
         for (scenarioVar in scenarioVars) {
-          locations <- str_locate_all(x, paste0("__", scenarioVar, "[-+]?\\d+"))
+          locations <- str_locate_all(x, paste0("__", scenarioVar, "[-+]?\\d+([\\.]\\d+)?"))
           if (length(unlist(locations)) > 0) {
             suppressWarnings(start <- unlist(lapply(locations, min)))
             suppressWarnings(end <- unlist(lapply(locations, max)))
             # strs <- str_replace(str_sub(x, start + 2, end), scenarioVar, paste0(var_dic[name==scenarioVar, scenario], " "))
-            strs <- paste0(var_dic[name==scenarioVar, scenario], " ", str_replace(paste0("+", str_sub(x, start + 2 + str_length(scenarioVar), end)), "\\+-", "-"), " ", var_dic[name==scenarioVar, unit])
+            if (endsWith(var_dic[name==scenarioVar, scenario], "Offset")) {
+              strs <- paste0(var_dic[name==scenarioVar, scenario], " ", str_replace(paste0("+", str_sub(x, start + 2 + str_length(scenarioVar), end)), "\\+-", "-"), " ", var_dic[name==scenarioVar, unit])
+            } else if (endsWith(var_dic[name==scenarioVar, scenario], "multiplier")) {
+              strs <- paste0(var_dic[name==scenarioVar, scenario], " ", paste0("*", str_sub(x, start + 2 + str_length(scenarioVar), end)), " ", var_dic[name==scenarioVar, unit])
+            } else {
+              strs <- paste0(var_dic[name==scenarioVar, scenario], " ", str_sub(x, start + 2 + str_length(scenarioVar), end), " ", var_dic[name==scenarioVar, unit])
+            }
             if (ret == "") {
               ret <- strs
             } else {

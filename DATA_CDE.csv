@@ -113,5 +113,8 @@ CROP_PER_DROP,kg/ha/mm,,,,,,,,crop per drop,
 CROP_PER_PERSON,kg/person,,,,,,,,crop per person,
 PRODUCTION,ton,,,,,,,,production,
 CROP_FAILURE_AREA,ha,,,,,,,,crop failure area,
-fen_tot,kg/ha,,,,,,,,,Fertilizer
-pfrst,day,,,,,,,,,Planting Window Shift
+fen_tot,kg/ha,,,,,,,,,Fertilizer Offset
+pfrst,day,,,,,,,,,Planting Date Offset
+eco2R,ppm,,,,,,,,,CO2 value
+erainM,,,,,,,,,,Rainfall multiplier
+emaxA,C,,,,,,,,,Temperature Offset
