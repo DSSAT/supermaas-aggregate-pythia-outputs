@@ -30,6 +30,7 @@ p <- argparser::add_argument(p, "--lookup_data", short="-d", nargs=1, help="Path
 p <- argparser::add_argument(p, "--crop_failure_threshold", short="-c", default = 100, nargs=Inf, help="Threshold to determine if the crop is failure, (kg/ha)")
 p <- argparser::add_argument(p, "--low_production_per_person_threshold", short="-l", default = 100, nargs=Inf, help="Threshold to determine if the production per person is low, (kg/person)")
 p <- argparser::add_argument(p, "--ignore_multiyear_sum_to_average", short="-i", flag = TRUE, help=paste0("Flag to disable the handling for getting average value against values from multi-years"))
+p <- argparser::add_argument(p, "--year_factor_var", short="-y", default = "HYEAR", nargs=Inf, help="The variable which is used as the factor of year")
 # p <- argparser::add_argument(p, "--period_annual", short="-a", flag=TRUE, help="Do the aggregation by year")
 # p <- argparser::add_argument(p, "--period_month", short="-m", flag=TRUE, help="Do the aggregation by month")
 # p <- argparser::add_argument(p, "--period_season", short="-s", flag=TRUE, help="Do the aggregation by growing season")
@@ -61,6 +62,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case20\\baseline\\pythia_out", "test\\data\\case20\\baseline\\analysis_out\\stage_2.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR","RUN_NAME", "HYEAR", "SEASON", "-l", "200"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\test8\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_5_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "POPULATION", "-o", "NICM", "-a", "HWAM", "-f", "ADMLV0", "CR","RUN_NAME", "HYEAR", "-l", "200"))
 # argv <- argparser::parse_args(p, c("test\\data\\case21\\pythia_out\\ETH_MZ_2022_pdss", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_pdss\\debug\\stage_7_admlv0.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "CR","MGMT", "HYEAR", "SEASON", "SCENARIO", "-l", "200","-d","test\\data\\case21\\lookup_data\\ETH_population_admlv2.csv"))
+# argv <- argparser::parse_args(p, c("test\\data\\case22\\pythia_out", "test\\data\\case22\\analysis_out\\stage_7_admlv0.csv", "-v", "PRODUCTION", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "CR","RUN_NAME", "WYEAR", "-l", "200"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -81,7 +83,7 @@ suppressWarnings(if (is.na(factors)) {
 cfThreshold <- argv$crop_failure_threshold
 hpThreshold <- argv$low_production_per_person_threshold
 multiYearIgnFlg <- argv$ignore_multiyear_sum_to_average
-
+yearFactor <- argv$year_factor_var
 # argv$period_annual <- TRUE
 
 if (!dir.exists(in_dir) && !file.exists(in_dir)) {
@@ -188,18 +190,69 @@ if ("ADMLVP" %in% colNames) {
 # populationFactors <- unique(c(populationVars, factors))
 populationFactors <- intersect(populationVars, factors)
 
-if ("PYEAR" %in% factors) {
-  yearFactor <- "PYEAR"
-} else if ("HYEAR" %in% factors) {
-  yearFactor <- "HYEAR"
-} else {
-  yearFactor <- var_dic[factor == "year", name]
+if (!yearFactor %in% factors) {
+  if ("PYEAR" %in% factors) {
+    yearFactor <- "PYEAR"
+  } else if ("HYEAR" %in% factors) {
+    yearFactor <- "HYEAR"
+  } else if ("WYEAR" %in% factors || length(unique(valid_entries[,HYEAR])) == 1) {
+    yearFactor <- "WYEAR"
+  }
 }
+
 if ("LATE_SEASON" %in% colNames) {
   print("Apply late season rules.")
   commonDiff = valid_entries[,.(diff=HYEAR-WYEAR)][,.N,by=diff][N==max(N),diff][1]
   valid_entries[HYEAR-WYEAR!=commonDiff, HYEAR:=WYEAR + commonDiff]
+  # valid_entries[HYEAR-PYEAR!=commonDiff,.(LATITUDE,LONGITUDE,PYEAR,HYEAR,GSD,PDAT,HDAT,LATE_SEASON)]
 }
+
+# valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia",.(HARVEST_AREA,.N),by=.(SEASON,HYEAR,MGMT,ADMLV0)]
+# valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia",.(.N),by=.(HYEAR,MGMT)]
+# valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia",.(.N),by=.(HYEAR)]
+# valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia",sum(HARVEST_AREA),by=.(HYEAR)]
+# 
+# unique(valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia",.(.N),by=.(HYEAR,LATITUDE,LONGITUDE)][,N])
+# valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia",.(.N),by=.(HYEAR,LATITUDE,LONGITUDE)][N==18]
+# 
+# valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia"&HYEAR%in%c(1988)&LATITUDE==6.2917&LONGITUDE==39.2083,.(.N),by=.(HYEAR)]
+# test <- valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia"&ADMLV2=="Guji"&MGMT=="Rainfed High N Inputs"&HYEAR%in%c(1986,1987,1988,1989)&LATITUDE==6.2917&LONGITUDE==39.2083]
+# test[,.(WYEAR,PYEAR,HYEAR,SDAT,PDAT,HDAT)]
+# valid_entries[SCENARIO=="Planting Window Shift -60 day"&SEASON=="Belg"&ADMLV1=="Oromia"&ADMLV2=="Guji"&HYEAR%in%c(1986,1987,1988,1989)&LATITUDE==6.2917&LONGITUDE==39.2083][,sum(HARVEST_AREA),by=.(HYEAR)]
+
+# valid_entries[SEASON=="Belg"&LATE_SEASON==F]
+# test <- data.table::fread("E:\\SSD_User\\Documents\\NetBeansProjects\\Develop\\WM_project\\supermaas-aggregate-pythia-outputs\\test\\data\\case21\\ETH_MZ_2022_N\\pythia_out\\original\\pp.csv")
+# unique(test[,.(LATITUDE,LONGITUDE,POPULATION)])[,sum(POPULATION)]
+
+# valid_entries[LATITUDE==10.2917&LONGITUDE==37.2917,sum(HARVEST_AREA),by=.(SCENARIO,HYEAR)]
+# valid_entries[SCENARIO=="Fertilizer +0"&HYEAR%in%c(1985,1986)&SEASON=="Meher",sum(HARVEST_AREA),by=.(SEASON,HYEAR)]
+# valid_entries[LATITUDE==10.2917&LONGITUDE==37.2917&HYEAR==1986,sum(HARVEST_AREA),by=SCENARIO]
+# population[SCENARIO=="Fertilizer +0"&HYEAR%in%c(1985,1986)&SEASON=="Meher",sum(POPULATION),by=.(SEASON,HYEAR,MGMT)]
+# population[LATITUDE==10.2917&LONGITUDE==37.2917&SCENARIO=="Planting Window Shift -60 day"&HYEAR%in%c(1985,1986)&SEASON=="Meher",sum(POPULATION),by=.(SEASON,HYEAR,MGMT)]
+# population_base[SCENARIO=="Fertilizer +0"&HYEAR%in%c(1985,1986)&SEASON=="Meher",sum(POPULATION),by=.(SEASON,HYEAR,MGMT)]
+# population_base<-unique(calc_production[, POPULATION, by = populationFactors])
+# population_base[,.N,by=.(LATITUDE, LONGITUDE,HYEAR)][N!=20]
+# population[,.N,by=.(LATITUDE, LONGITUDE,HYEAR,SEASON,MGMT,SCENARIO)][N!=1]
+# population[,.N,by=.(LATITUDE, LONGITUDE,HYEAR,SEASON,SCENARIO)][N!=4]
+# population[,.N,by=.(LATITUDE, LONGITUDE,HYEAR,MGMT,SCENARIO)][N!=2]
+# population[,.N,by=.(LATITUDE, LONGITUDE,HYEAR)]
+# unique(population[,MGMT])
+# unique(population[,.(LATITUDE, LONGITUDE)])[,.N]
+# unique(population[,.(HYEAR)])[,.N]
+# unique(population[,.(LATITUDE, LONGITUDE)])[,.N] * unique(population[,.(HYEAR)])[,.N]
+# unique(population[,.(LATITUDE, LONGITUDE,HYEAR)])[,.N]
+# unique(valid_entries[,.(LATITUDE, LONGITUDE)])[,.N]
+# unique(valid_entries[,.(HYEAR)])[,.N]
+# unique(valid_entries[,.(LATITUDE, LONGITUDE)])[,.N] * unique(valid_entries[,.(HYEAR)])[,.N]
+# unique(valid_entries[,.(LATITUDE, LONGITUDE,HYEAR)])[,.N]
+# 
+# unique(valid_entries[,.(LATITUDE, LONGITUDE,HYEAR)])[,.N,by=.(LATITUDE, LONGITUDE)][N<34]
+# unique(valid_entries[,.(LATITUDE, LONGITUDE,PYEAR)])[,.N,by=.(LATITUDE, LONGITUDE)][N!=35]
+# unique(df[,.(LATITUDE, LONGITUDE,HYEAR)])[,.N,by=.(LATITUDE, LONGITUDE)][N!=35]
+# valid_entries[LATITUDE==9.2917&LONGITUDE==39.0417,.(LATITUDE, LONGITUDE,PYEAR,HYEAR,GSD,PDAT,HDAT,LATE_SEASON)][PYEAR!=HYEAR]
+# valid_entries[LATITUDE==9.2917&LONGITUDE==39.0417,.(LATITUDE, LONGITUDE,PYEAR,HYEAR,GSD,PDAT,HDAT,LATE_SEASON,CROSS_YEAR=PYEAR!=HYEAR)]
+# data.table::fwrite(valid_entries[LATITUDE==9.2917&LONGITUDE==39.0417,.(LATITUDE, LONGITUDE,PYEAR,HYEAR,GSD,PDAT,HDAT,LATE_SEASON,CROSS_YEAR=PYEAR!=HYEAR)], file = "dump.csv")
+# unique(population_base[,POPULATION,by=.(LATITUDE, LONGITUDE,HYEAR,MGMT,SCENARIO)])[,sum(POPULATION),by=.(HYEAR,SCENARIO)]
 
 print("Starting aggregation.")
 # if (argv$period_annual) {
@@ -235,12 +288,13 @@ setnames(final, headers)
 if (!is.na(lookupData) && !F %in% (c(populationFactors, "POPULATION") %in% colnames(lookupData))) {
   print("Apply population data from lookup table instead of original Pythia output")
   population <- lookupData[,.(POPULATION=sum(POPULATION)), by = populationFactors]
-} else {
+  aggregated <- merge(aggregated, population, by = populationFactors, sort = F)
+} else if ("POPULATION" %in% colNames) {
   print(paste0("Try to apply the population data, but require it come with <", paste0(populationFactors, collapse = ","), ">"))
   print("Will use the population data from original Pythia output")
   population <- unique(calc_production[, POPULATION, by = populationVars])[, .(POPULATION=sum(POPULATION)), by = populationFactors]
+  aggregated <- merge(aggregated, population, by = populationFactors, sort = F)
 }
-aggregated <- merge(aggregated, population, by = populationFactors, sort = F)
 
 # execute predefined variable aggregation
 suppressWarnings(if (!is.na(variables)) {
