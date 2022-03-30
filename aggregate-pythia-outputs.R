@@ -62,7 +62,8 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case20\\baseline\\pythia_out", "test\\data\\case20\\baseline\\analysis_out\\stage_2.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","LATITUDE", "LONGITUDE", "CR","RUN_NAME", "HYEAR", "SEASON", "-l", "200"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\test8\\baseline\\pythia_out", "test\\data\\case18\\test4\\baseline\\analysis_out\\stage_5_1.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "POPULATION", "-o", "NICM", "-a", "HWAM", "-f", "ADMLV0", "CR","RUN_NAME", "HYEAR", "-l", "200"))
 # argv <- argparser::parse_args(p, c("test\\data\\case21\\pythia_out\\ETH_MZ_2022_pdss", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_pdss\\debug\\stage_7_admlv0.csv", "-v", "PRODUCTION", "CROP_PER_PERSON", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "CR","MGMT", "HYEAR", "SEASON", "SCENARIO", "-l", "200","-d","test\\data\\case21\\lookup_data\\ETH_population_admlv2.csv"))
-# argv <- argparser::parse_args(p, c("test\\data\\case22\\pythia_out", "test\\data\\case22\\analysis_out\\stage_7_admlv0.csv", "-v", "PRODUCTION", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "CR","RUN_NAME", "WYEAR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case22\\pythia_out\\ETH_MZ_Mar22_Forecast_Ar", "test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\stage_8_admlv0.csv", "-v", "PRODUCTION", "CROP_PER_DROP", "CROP_FAILURE_AREA", "HUNGRY_PEOPLE", "-t", "HARVEST_AREA", "-o", "NICM", "-a", "HWAM", "-f","ADMLV0", "CR","SEASON", "WYEAR", "-l", "200"))
+# argv <- argparser::parse_args(p, c("test\\data\\case22\\pythia_out\\ETH_MZ_Mar22_Forecast_Ar", "test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\stage_14_admlv0.csv", "-v", "PRODUCTION", "-f","ADMLV0", "CR","HYM", "WYEAR", "-y", "WYEAR"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -146,6 +147,9 @@ if (!"SYEAR" %in% colNames) {
 if (!"HMONTH" %in% colNames) {
   valid_entries[,HMONTH:=format(as.Date(paste0(HDAT), "%Y%j"), "%m")]
 }
+if ("HYM" %in% factors && !"HYM" %in% colNames) {
+  valid_entries[,HYM:=format(as.Date(paste0(HDAT), "%Y%j"), "%Y-%m")]
+}
 if (!"PYEAR" %in% colNames) {
   valid_entries[,`:=`(PYEAR = trunc(PDAT/1000))]
 }
@@ -200,7 +204,7 @@ if (!yearFactor %in% factors) {
   }
 }
 
-if ("LATE_SEASON" %in% colNames) {
+if ("LATE_SEASON" %in% colNames && yearFactor == "HYEAR") {
   print("Apply late season rules.")
   commonDiff = valid_entries[,.(diff=HYEAR-WYEAR)][,.N,by=diff][N==max(N),diff][1]
   valid_entries[HYEAR-WYEAR!=commonDiff, HYEAR:=WYEAR + commonDiff]
@@ -495,7 +499,25 @@ suppressWarnings(if (!is.na(totTonVariables)) {
   }
 })
 
-if ("month" %in% colnames(final)) {
+if ("year_month" %in% colnames(final)) {
+  dataGroups <- unique(final[,mget(headers[!headers %in% "year_month"])])
+  groupSize <- nrow(dataGroups)
+  yearMonthsList <- sort(unique(final[,year_month]))
+  dataGroups2 <- dataGroups[rep(seq_len(groupSize), length(yearMonthsList)), ]
+  yearMonthsList2 <- c()
+  for (yearMonth in yearMonthsList) {
+    yearMonthsList2 <- c(yearMonthsList2, rep(yearMonth, groupSize))
+  }
+  dataGroups2[, year_month := yearMonthsList2]
+  setcolorder(dataGroups2, headers)
+  final <- merge(dataGroups2, final, by = headers, sort = F, all.x = T)
+  
+  for (header in colnames(final)) {
+    if (!header %in% headers) {
+      final[is.na(get(header)), (header) := 0]
+    }
+  }
+} else if ("month" %in% colnames(final)) {
   dataGroups <- unique(final[,mget(headers[!headers %in% "month"])])
   groupSize <- nrow(dataGroups)
   dataGroups <- dataGroups[rep(seq_len(groupSize), 12), ]

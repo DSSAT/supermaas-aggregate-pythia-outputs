@@ -24,6 +24,7 @@ argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images2", "-d"))
+# argv <- argparser::parse_args(p, c("test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\images", "test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\images2"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_file <- normalizePath(argv$output))
@@ -124,8 +125,24 @@ if (isDSSATNamingRule) {
       img <- as.raster(readPNG(x))
       rasterGrob(img)
     })
-    ggsave(file.path(out_dir, file_name),width=20.4, height=26.4, 
-           arrangeGrob(grobs = plots, layout_matrix = lay))
+    if (!F %in% startsWith(tools::file_path_sans_ext(basename(flist)), "forecast_") ) {
+      # merging forecast pngs
+      rowNum <- 3
+      lay <- rep(1, rowNum)
+      for (i in 2 : rowNum) {
+        lay <- rbind(lay, rep(1, rowNum))
+      }
+      for (i in 1:ceiling((length(flist) - 1) / rowNum)) {
+        lay <- rbind(lay, ((i-1)*rowNum+2):(i*rowNum+1))
+      }
+      file_name <- paste0(prefix, tools::file_path_sans_ext(basename(flist))[1], ".png")
+      ggsave(file.path(out_dir, file_name),width=20.4, height=26.4, 
+             arrangeGrob(grobs = plots, layout_matrix = lay))
+    } else {
+      ggsave(file.path(out_dir, file_name),width=20.4, height=26.4, 
+             arrangeGrob(grobs = plots))
+    }
+    
     cat("done\r\n")
     
   } else if (extension == ".pdf") {
