@@ -21,12 +21,12 @@ if (file.exists(crop_cde_file)) {
 }
 
 p <- argparser::arg_parser("Generate statistics boxplot based on merged aggregation results from Pythia outputs for World Modelers(fixed)")
-p <- argparser::add_argument(p, "input", "Aggregation result file, includes all the scenarios")
+p <- argparser::add_argument(p, "input", "Aggregation result file or folder, includes all the scenarios")
 p <- argparser::add_argument(p, "output", "folder Path to generaete box plot graphs")
 p <- argparser::add_argument(p, "--variables", short = "-v", nargs = Inf, help = paste("Variable HEADER names for comparison, if not given, then comparing all non-factor columns"))
 p <- argparser::add_argument(p, "--factors", short="-f", nargs=Inf, help=paste0("Factor names for grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "" & name != "SCENARIO", factor]), collapse=","), "]"))
 p <- argparser::add_argument(p, "--group", short="-g", nargs=1, help=paste0("Group name for sub-grouping the comparison result: if not given, then any header in the following list will be considered as factor [", paste(unique(var_dic[factor != "" & name != "SCENARIO", factor]), collapse=","), "]"))
-p <- argparser::add_argument(p, "--x_var", short = "-x", nargs = 1, default="SCENARIO", help = paste("Variable used for x-axit in plotting graph"))
+p <- argparser::add_argument(p, "--x_var", short = "-a", nargs = 1, default="SCENARIO", help = paste("Variable used for x-axit in plotting graph"))
 p <- argparser::add_argument(p, "--same_y_scale", short="-i", flag = TRUE, help=paste0("Flag to apply same scale setup on y axis among the plots"))
 # p <- argparser::add_argument(p, "--max_bar_num", short="-n", default = 25, help = "Maximum number of box bar per graph")
 
@@ -34,6 +34,7 @@ argv <- argparser::parse_args(p)
 
 # for test only
 # argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\stage_8_admlv1.csv", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images_debug", "-f", "ADMLV1", "-g", "SEASON"))
+# argv <- argparser::parse_args(p, c("test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\stage_8_admlv0.csv", "test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\images_debug", "-f", "ADMLV0", "-g", "SEASON", "-a", "FILE"))
 
 suppressWarnings(in_dir <- normalizePath(argv$input))
 suppressWarnings(out_dir <- normalizePath(argv$output))
@@ -59,8 +60,22 @@ if (!dir.exists(out_dir)) {
 }
 
 # Process baseline data and calculate threshold
+flist <- list()
+dts <- list()
 print("Loading files for statistic plotting")
-df <- data.table::fread(in_dir)
+if (!dir.exists(in_dir)) {
+  flist <- in_dir
+} else {
+  flist <- list.files(path = in_dir, pattern = "*.csv", recursive = FALSE, full.names = TRUE)
+}
+for(f in flist) {
+  tmp <- data.table::fread(f)
+  if (!"file" %in% colnames(tmp)) {
+    tmp[,file := tools::file_path_sans_ext(basename(f))]
+  }
+  dts <- c(dts, list(tmp))
+}
+df <- data.table::rbindlist(dts)
 
 suppressWarnings(if (is.na(factors)) {
   headers <- colnames(df)
@@ -124,12 +139,17 @@ if (class(df[,get(plotXVarHeader)]) != "character") {
 }
 
 df[,(plotXVarHeaderOrdered) := factor(get(plotXVarHeader), levels=unique(df[,get(plotXVarHeader)]))]
-df[,(groupHeader) := factor(get(groupHeader), levels=unique(df[,get(groupHeader)]))]
+if (!is.na(group)) {
+  df[,(groupHeader) := factor(get(groupHeader), levels=unique(df[,get(groupHeader)]))]
+  groupNum <- length(levels(df[,get(groupHeader)]))
+} else {
+  groupNum <- 1
+}
 
 plotDatas <- split(df, by=plotFactorHeaders, keep.by=FALSE, collapse="__")
 plotKeys <- names(plotDatas)
 
-groupNum <- length(levels(df[,get(groupHeader)]))
+
 cbPalette9 <-  c("#D55E00", "#0072B2", "#F0E442", "#009E73", "#56B4E9", "#E69F00", "#CC79A7", "#000000", "#FFFFFF")
 cbPalette10 <- c('#88CCEE', '#44AA99', '#117733', '#332288', '#DDCC77', '#999933', '#CC6677', '#882255', '#AA4499', '#DDDDDD')
 cbPalette11 <- c("#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026")
@@ -184,7 +204,7 @@ for (variable in variables) {
       if (!is.na(group)) {
         plot <- ggplot(data = plotSubData, aes(x = get(plotXVarHeaderOrdered), y = get(variable), fill = get(groupHeader)))
       } else {
-        plot <- ggplot(data = plotSubData, aes(x = get(plotXVarHeaderOrdered), y = get(variable)))
+        plot <- ggplot(data = plotSubData, aes(x = get(plotXVarHeaderOrdered), y = get(variable), fill = file))
       }
       
       plot <- plot + geom_boxplot(
@@ -227,6 +247,8 @@ for (variable in variables) {
         plot <- plot + theme(legend.text = element_text(size=8)) +
           theme(legend.title = element_text(size=9, face="bold")) +
           guides(fill=guide_legend(title=group))
+      } else {
+        plot <- plot + theme(legend.position="none")
       }
       
       if (ceiling(factorNum/maxBarNum) == 1) {

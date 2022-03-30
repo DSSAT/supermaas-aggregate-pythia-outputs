@@ -34,6 +34,7 @@ argv <- argparser::parse_args(p)
 # argv <- argparser::parse_args(p, c("test\\data\\case17\\agg_result_monthly\\agg_base_monthly_production_Ghana", "test\\data\\case17\\agg_result_monthly\\", "-f","ADMLV0"))
 # argv <- argparser::parse_args(p, c("test\\data\\case18\\test\\baseline\\analysis_out\\stage_14_admlv1.csv", "test\\data\\case18\\test\\baseline\\analysis_out\\images", "-f","ADMLV1"))
 # argv <- argparser::parse_args(p, c("test\\data\\case21\\analysis_out\\ETH_MZ_2022_pdss\\stage_14_admlv0.csv", "test\\data\\case21\\analysis_out\\ETH_MZ_2022_N\\images2_debug", "-f", "ADMLV0", "-g", "SCENARIO"))
+# argv <- argparser::parse_args(p, c("test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\stage_14_admlv0.csv", "test\\data\\case22\\analysis_out\\ETH_MZ_Mar22_Forecast_Ar\\images_debug", "-f", "ADMLV0"))
 
 suppressWarnings(in_file <- normalizePath(argv$input))
 suppressWarnings(out_dir <- normalizePath(argv$output))
@@ -83,7 +84,7 @@ xLaxAngel <- 0
 
 df[,month := factor(as.character(df[,month]), levels="1":"12")]
 groupUnit <- ""
-if (group == "SCENARIO") {
+if (!is.na(group) && group == "SCENARIO") {
   cnt <- 0
   groupHeader2 <- ""
   for (subGroupName in var_dic[scenario!="", scenario]) {
@@ -101,11 +102,14 @@ if (group == "SCENARIO") {
 }
 if (!is.na(group)) {
   df[,(groupHeader) := factor(get(groupHeader), levels=unique(df[,get(groupHeader)]))]
+  groupNum <- length(levels(df[,get(groupHeader)]))
+} else {
+  groupNum <- 1
 }
 plotDatas <- split(df, by=plotFactorHeaders, keep.by=FALSE, collapse="__")
 plotKeys <- names(plotDatas)
 
-groupNum <- length(levels(df[,get(groupHeader)]))
+
 cbPalette9 <-  c("#D55E00", "#0072B2", "#F0E442", "#009E73", "#56B4E9", "#E69F00", "#CC79A7", "#000000", "#FFFFFF")
 cbPalette10 <- c('#88CCEE', '#44AA99', '#117733', '#332288', '#DDCC77', '#999933', '#CC6677', '#882255', '#AA4499', '#DDDDDD')
 cbPalette11 <- c("#313695", "#4575b4", "#74add1", "#abd9e9", "#e0f3f8", "#ffffbf", "#fee090", "#fdae61", "#f46d43", "#d73027", "#a50026")
@@ -155,7 +159,7 @@ for (variable in variables) {
     if (!is.na(group)) {
       plot <- ggplot(data = plotData, aes(x = month, y = get(variable), fill = get(groupHeader)))
     } else {
-      plot <- ggplot(data = plotData, aes(x = month, y = get(variable)))
+      plot <- ggplot(data = plotData, aes(x = month, y = get(variable), fill = file))
     }
     
     plot <- plot + geom_boxplot(
@@ -201,15 +205,25 @@ for (variable in variables) {
       plot <- plot + theme(legend.text = element_text(size=5)) +
         theme(legend.title = element_text(size=5, face="bold")) +
         guides(fill=guide_legend(title=str_wrap(paste0(groupHeader, groupUnitStr), 15)))
+    } else {
+      plot <- plot + theme(legend.position="none")
     }
     
     file_name <- paste0(str_replace_all(variableInFile, " ", "_"), "-", str_replace_all(key, "\\.", "__"), ".", extension)
-    ggsave(
-      plot,
-      filename = file_name,
-      path = out_dir,
-      width=8, height=4, dpi=300
-    )
+    if (!is.na(group)) {
+      ggsave(
+        plot,
+        filename = file_name,
+        path = out_dir,
+        width=8, height=4, dpi=300
+      )
+    } else {
+      ggsave(
+        plot,
+        filename = file_name,
+        path = out_dir
+      )
+    }
   }
 }
 
