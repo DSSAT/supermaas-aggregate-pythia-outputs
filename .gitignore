@@ -3,4 +3,12 @@
 .RData
 .Ruserdata
 .DS_Store
+test/*
+extdata
+debug.R
+renv/settings.dcf
 gadm_shapes/*
+tmp/*
+doc/*
+run*.bat
+*.bat
